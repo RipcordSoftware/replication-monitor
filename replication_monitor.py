@@ -8,44 +8,11 @@ import webbrowser
 import re
 
 from gi.repository import Gtk, Gdk, GObject
+
 from lib.builder import Builder
 from lib.couchdb import CouchDB
 from lib.model_mapper import ModelMapper
-
-
-class CredentialsDialog:
-    _username = None
-    _password = None
-
-    def __init__(self, builder):
-        self._win = builder.get_object('dialog_credentials', target=self)
-        builder.get_children('dialog_credentials', self)
-
-    def run(self):
-        result = self._win.run()
-        self._win.hide()
-        return result
-
-    def on_button_credentials_dialog_ok(self, button):
-        self._username = self.entry_username.get_text()
-        self._password = self.entry_password.get_text()
-        self._win.response(Gtk.ButtonsType.OK)
-
-    def on_button_credentials_dialog_cancel(self, button):
-        self._win.response(Gtk.ButtonsType.CANCEL)
-        self._win.hide()
-
-    def on_entry_username_changed(self, text):
-        text = self.entry_username.get_text()
-        self.button_credentials_dialog_ok.set_sensitive(len(text) > 0)
-
-    @property
-    def username(self):
-        return self._username
-
-    @property
-    def password(self):
-        return self._password
+from ui.credentials_dialog import CredentialsDialog
 
 
 class MainWindow:
@@ -154,15 +121,30 @@ class MainWindow:
         self._database_menu.popup(None, None, None, None, event.button, event.time)
 
     def get_couchdb(self):
-        if self.authenticate:
+        return CouchDB(self.server, self.port, self.secure, self.get_credentials)
+
+    def get_credentials(self):
+        result = None
+        finished = False
+
+        def invoke():
+            nonlocal result, finished
+
             if self.credentials_dialog.run() == Gtk.ButtonsType.OK:
                 username = self.credentials_dialog.username
                 password = self.credentials_dialog.password
-                return CouchDB(self.server, self.port, self.secure, username, password)
+                result = username, password
             else:
-                return None
-        else:
-            return CouchDB(self.server, self.port, self.secure)
+                result = None
+
+            finished = True
+
+        GObject.idle_add(invoke)
+
+        while not finished:
+            time.sleep(0.5)
+
+        return result
 
     @property
     def server(self):
@@ -177,19 +159,16 @@ class MainWindow:
         secure = self.checkbutton_secure.get_active()
         return secure or self.port == '443'
 
-    @property
-    def authenticate(self):
-        auth = self.checkbutton_authenticate.get_active()
-        return auth
-
     @staticmethod
     def get_update_sequence(val):
         seq = 0
 
         if isinstance(val, str):
-            m = re.search('^\s*(?=\d+)', val)
-            if len(m) == 1:
-                seq = int(m.group(0))
+            m = re.search('^\s*(\d+)', val)
+            if m:
+                groups = m.groups()
+                if len(groups) == 1:
+                    seq = int(groups[0])
         elif isinstance(val, int):
             seq = val
 
