@@ -13,6 +13,7 @@ from lib.builder import Builder
 from lib.couchdb import CouchDB
 from lib.model_mapper import ModelMapper
 from ui.credentials_dialog import CredentialsDialog
+from ui.new_database_dialog import NewDatabaseDialog
 
 
 class MainWindow:
@@ -24,6 +25,7 @@ class MainWindow:
         self._database_menu = builder.get_object('menu_databases', target=self)
         builder.get_children('menu_databases', self)
         self.credentials_dialog = CredentialsDialog(builder)
+        self.new_database_dialog = NewDatabaseDialog(builder)
         self._win.show_all()
 
     def on_delete(self, widget, data):
@@ -76,6 +78,10 @@ class MainWindow:
         self._database_menu.popup(None, None, None, None, 0, 0)
         return True
 
+    def on_menu_databases_new(self, widget):
+        if self.new_database_dialog.run() == Gtk.ButtonsType.OK:
+            print('new database: ' + self.new_database_dialog.name)
+
     def on_menu_databases_delete(self, menu):
         (model, pathlist) = self.treeview_databases.get_selection().get_selected_rows()
         deleted_paths = []
@@ -96,7 +102,7 @@ class MainWindow:
             iter = model.get_iter(path)
             model.remove(iter)
 
-    def on_menu_databases_browse(self, menu):
+    def on_menu_databases_browse_futon(self, menu):
         (model, pathlist) = self.treeview_databases.get_selection().get_selected_rows()
         if pathlist and len(pathlist):
             path = pathlist[0]
@@ -106,13 +112,31 @@ class MainWindow:
             url += '://' + self.server + ':' + self.port + '/_utils/database.html?' + db.db_name
             webbrowser.open_new_tab(url)
 
-    def on_menu_databases_show(self, menu):
+    def on_menu_databases_browse_alldocs(self, menu):
         (model, pathlist) = self.treeview_databases.get_selection().get_selected_rows()
-        single_row = pathlist and len(pathlist) == 1
-        multiple_rows = pathlist and len(pathlist) > 1
+        if pathlist and len(pathlist):
+            path = pathlist[0]
+            row = model[path]
+            db = ModelMapper.get_item_instance(row)
+            url = 'https' if self.secure else 'http'
+            url += '://' + self.server + ':' + self.port + '/' + db.db_name + '/_all_docs?limit=100'
+            webbrowser.open_new_tab(url)
 
-        self.menuitem_databases_browse.set_sensitive(single_row)
+    def on_menu_databases_show(self, menu):
+        connected = self._couchdb is not None
+        single_row = False
+        multiple_rows = False
+
+        if connected:
+            (model, pathlist) = self.treeview_databases.get_selection().get_selected_rows()
+            single_row = pathlist and len(pathlist) == 1
+            multiple_rows = pathlist and len(pathlist) > 1
+
+        self.menuitem_databases_new.set_sensitive(connected)
+        self.menuitem_databases_browse_futon.set_sensitive(single_row)
+        self.menuitem_databases_browse_alldocs.set_sensitive(single_row)
         self.menuitem_databases_delete.set_sensitive(single_row or multiple_rows)
+        self.menuitem_databases_compact.set_sensitive(single_row or multiple_rows)
 
     def on_menu_databases_realize(self, menu):
         self.on_menu_databases_show(menu)
@@ -173,6 +197,7 @@ class MainWindow:
             seq = val
 
         return seq
+
 
 def main():
     ui_path = os.path.dirname(os.path.realpath(sys.argv[0]))

@@ -542,10 +542,109 @@
         </child>
       </object>
     </child>
-    <action-widgets>
-      <action-widget response="0">button_credentials_dialog_ok</action-widget>
-      <action-widget response="1">button_credentials_dialog_cancel</action-widget>
-    </action-widgets>
+  </object>
+  <object class="GtkDialog" id="dialog_new_database">
+    <property name="can_focus">False</property>
+    <property name="title" translatable="yes">New Database</property>
+    <property name="window_position">center-on-parent</property>
+    <property name="type_hint">dialog</property>
+    <property name="skip_taskbar_hint">True</property>
+    <property name="transient_for">applicationwindow</property>
+    <signal name="show" handler="on_dialog_new_database_show" swapped="no"/>
+    <child internal-child="vbox">
+      <object class="GtkBox" id="dialog-vbox2">
+        <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <child internal-child="action_area">
+          <object class="GtkButtonBox" id="dialog-action_area2">
+            <property name="can_focus">False</property>
+            <property name="margin_right">4</property>
+            <property name="margin_bottom">4</property>
+            <property name="layout_style">end</property>
+            <child>
+              <object class="GtkButton" id="button_new_database_dialog_ok">
+                <property name="label">gtk-ok</property>
+                <property name="visible">True</property>
+                <property name="sensitive">False</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_stock">True</property>
+                <property name="always_show_image">True</property>
+                <signal name="clicked" handler="on_button_new_database_dialog_ok" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="button_new_database_dialog_cancel">
+                <property name="label">gtk-cancel</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_stock">True</property>
+                <property name="always_show_image">True</property>
+                <signal name="clicked" handler="on_button_new_database_dialog_cancel" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkGrid" id="grid2">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="margin_left">8</property>
+            <property name="margin_right">8</property>
+            <property name="margin_top">8</property>
+            <property name="margin_bottom">8</property>
+            <child>
+              <object class="GtkLabel" id="label6">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xpad">4</property>
+                <property name="label" translatable="yes">Name:</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkEntry" id="entry_new_database_name">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="has_focus">True</property>
+                <property name="width_chars">22</property>
+                <property name="input_hints">GTK_INPUT_HINT_NO_SPELLCHECK | GTK_INPUT_HINT_NONE</property>
+                <signal name="changed" handler="on_entry_new_database_name_changed" swapped="no"/>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">0</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+    </child>
   </object>
   <object class="GtkMenu" id="menu_databases">
     <property name="visible">True</property>
@@ -558,17 +657,75 @@
         <property name="can_focus">False</property>
         <property name="label" translatable="yes">Browse</property>
         <property name="use_underline">True</property>
-        <signal name="activate" handler="on_menu_databases_browse" swapped="no"/>
+        <child type="submenu">
+          <object class="GtkMenu" id="menu2">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <child>
+              <object class="GtkMenuItem" id="menuitem_databases_browse_futon">
+                <property name="visible">True</property>
+                <property name="sensitive">False</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">Futon</property>
+                <property name="use_underline">True</property>
+                <signal name="activate" handler="on_menu_databases_browse_futon" swapped="no"/>
+              </object>
+            </child>
+            <child>
+              <object class="GtkMenuItem" id="menuitem_databases_browse_alldocs">
+                <property name="visible">True</property>
+                <property name="sensitive">False</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">All Docs (top 100)</property>
+                <property name="use_underline">True</property>
+                <signal name="activate" handler="on_menu_databases_browse_alldocs" swapped="no"/>
+              </object>
+            </child>
+          </object>
+        </child>
       </object>
     </child>
     <child>
-      <object class="GtkMenuItem" id="menuitem_databases_delete">
+      <object class="GtkMenuItem" id="menuitem_database">
         <property name="visible">True</property>
-        <property name="sensitive">False</property>
         <property name="can_focus">False</property>
-        <property name="label" translatable="yes">Delete</property>
+        <property name="label" translatable="yes">Database</property>
         <property name="use_underline">True</property>
-        <signal name="activate" handler="on_menu_databases_delete" swapped="no"/>
+        <child type="submenu">
+          <object class="GtkMenu" id="menu1">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <child>
+              <object class="GtkMenuItem" id="menuitem_databases_new">
+                <property name="visible">True</property>
+                <property name="sensitive">False</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">New</property>
+                <property name="use_underline">True</property>
+                <signal name="activate" handler="on_menu_databases_new" swapped="no"/>
+              </object>
+            </child>
+            <child>
+              <object class="GtkMenuItem" id="menuitem_databases_delete">
+                <property name="visible">True</property>
+                <property name="sensitive">False</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">Delete</property>
+                <property name="use_underline">True</property>
+                <signal name="activate" handler="on_menu_databases_delete" swapped="no"/>
+              </object>
+            </child>
+            <child>
+              <object class="GtkMenuItem" id="menuitem_databases_compact">
+                <property name="visible">True</property>
+                <property name="sensitive">False</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">Compact</property>
+                <property name="use_underline">True</property>
+              </object>
+            </child>
+          </object>
+        </child>
       </object>
     </child>
   </object>
