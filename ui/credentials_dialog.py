@@ -20,7 +20,6 @@ class CredentialsDialog:
 
     def on_button_credentials_dialog_cancel(self, button):
         self._win.response(Gtk.ButtonsType.CANCEL)
-        self._win.hide()
 
     def on_entry_username_changed(self, text):
         text = self.entry_username.get_text()

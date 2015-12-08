@@ -29,7 +29,7 @@ class CouchDB:
         if task_type and tasks[1]:
             tasks = [task for task in tasks[1] if task.type == task_type]
 
-        return tasks[1] if tasks[1] else []
+        return tasks if tasks else []
 
     def _make_request(self, uri, method='GET'):
         headers = {}

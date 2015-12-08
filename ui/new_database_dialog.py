@@ -24,7 +24,6 @@ class NewDatabaseDialog:
 
     def on_button_new_database_dialog_cancel(self, button):
         self._win.response(Gtk.ButtonsType.CANCEL)
-        self._win.hide()
 
     def on_entry_new_database_name_changed(self, text):
         name = self.entry_new_database_name.get_text()
