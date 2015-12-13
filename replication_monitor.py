@@ -132,6 +132,14 @@ class MainWindow:
             url += '://' + self.server + ':' + self.port + '/_utils/database.html?' + db.db_name
             webbrowser.open_new_tab(url)
 
+    def on_menu_databases_browse_fauxton(self, menu):
+        selected_databases = self.selected_database_rows
+        if len(selected_databases) > 0:
+            db = selected_databases[0].db
+            url = 'https' if self.secure else 'http'
+            url += '://' + self.server + ':' + self.port + '/_utils/fauxton/index.html#/database/' + db.db_name + '/_all_docs?limit=20'
+            webbrowser.open_new_tab(url)
+
     def on_menu_databases_browse_alldocs(self, menu):
         selected_databases = self.selected_database_rows
         if len(selected_databases) > 0:
@@ -148,6 +156,7 @@ class MainWindow:
 
         self.menuitem_databases_new.set_sensitive(connected)
         self.menuitem_databases_browse_futon.set_sensitive(single_row)
+        self.menuitem_databases_browse_fauxton.set_sensitive(single_row)
         self.menuitem_databases_browse_alldocs.set_sensitive(single_row)
         self.menuitem_databases_delete.set_sensitive(single_row or multiple_rows)
         self.menuitem_databases_compact.set_sensitive(single_row or multiple_rows)
