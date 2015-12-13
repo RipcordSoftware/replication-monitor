@@ -1,6 +1,6 @@
 import re
 
-from gi.repository import Gtk, Gdk, GObject
+from gi.repository import Gtk
 
 
 class NewDatabaseDialog:
@@ -20,10 +20,10 @@ class NewDatabaseDialog:
 
     def on_button_new_database_dialog_ok(self, button):
         self._name = self.entry_new_database_name.get_text()
-        self._win.response(Gtk.ButtonsType.OK)
+        self._win.response(Gtk.ResponseType.OK)
 
     def on_button_new_database_dialog_cancel(self, button):
-        self._win.response(Gtk.ButtonsType.CANCEL)
+        self._win.response(Gtk.ResponseType.CANCEL)
 
     def on_entry_new_database_name_changed(self, text):
         name = self.entry_new_database_name.get_text()

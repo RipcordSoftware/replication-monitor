@@ -6,17 +6,21 @@ import time
 import threading
 import webbrowser
 import re
+import collections
 
 from gi.repository import Gtk, Gdk, GObject
 
 from lib.builder import Builder
-from lib.couchdb import CouchDB
+from lib.couchdb import CouchDB, CouchDBException
 from lib.model_mapper import ModelMapper
 from ui.credentials_dialog import CredentialsDialog
 from ui.new_database_dialog import NewDatabaseDialog
+from ui.delete_databases_dialog import DeleteDatabasesDialog
 
 
 class MainWindow:
+    SelectedDatabaseRow = collections.namedtuple('SelectedDatabaseRow', 'index db')
+
     _couchdb = None
 
     def __init__(self, builder):
@@ -26,45 +30,64 @@ class MainWindow:
         builder.get_children('menu_databases', self)
         self.credentials_dialog = CredentialsDialog(builder)
         self.new_database_dialog = NewDatabaseDialog(builder)
+        self.delete_databases_dialog = DeleteDatabasesDialog(builder)
         self._win.show_all()
 
     def on_delete(self, widget, data):
         Gtk.main_quit()
 
-    def on_button_connect(self, button):
-        self._couchdb = self.get_couchdb()
+    @staticmethod
+    def ui_task(func):
+        def task():
+            nonlocal func
+            func()
+        GObject.idle_add(task)
+
+    def couchdb_request(self, func):
         if self._couchdb:
             cursor = Gdk.Cursor.new(Gdk.CursorType.WATCH)
             self._win.get_window().set_cursor(cursor)
 
-            def connect():
+            def task():
+                nonlocal func
+
                 try:
-                    db_store = Gtk.ListStore(str, int, int, int, str, str, object)
-                    for db in self._couchdb.get_databases():
-                        info = self._couchdb.get_database(db)
-                        mapper = ModelMapper(info, ['db_name',
-                                                    'doc_count',
-                                                    lambda i: MainWindow.get_update_sequence(i.update_seq),
-                                                    lambda i: i.disk_size / 1024 / 1024,
-                                                    None,
-                                                    None])
-                        db_store.append(mapper)
-                    self.treeview_databases.set_model(db_store)
-
-                    tasks_store = Gtk.ListStore(str, str, str, int, bool, str, str, object)
-                    for task in self._couchdb.get_active_tasks('replication'):
-                        mapper = ModelMapper(task, ['source', 'target', None, 'progress', 'continuous',
-                                                    lambda t: time.strftime('%H:%M:%S', time.gmtime(t.started_on)),
-                                                    lambda t: time.strftime('%H:%M:%S', time.gmtime(task.updated_on))])
-                        tasks_store.append(mapper)
-                        self.treeview_tasks.set_model(tasks_store)
+                    func()
+                except CouchDBException as e:
+                    self.ui_task(lambda ex=e: print('Error: %d' % ex.status))
+                except Exception as ex:
+                    self.ui_task(lambda ex=e: print('Error!!'))
                 finally:
-                    def done():
-                        self._win.get_window().set_cursor(None)
-                    GObject.idle_add(done)
+                    self.ui_task(lambda: self._win.get_window().set_cursor(None))
 
-            thread = threading.Thread(target=connect)
+            thread = threading.Thread(target=task)
             thread.start()
+
+    def on_button_connect(self, button):
+        self._couchdb = self.get_couchdb()
+
+        def request():
+            db_store = Gtk.ListStore(str, int, int, int, str, str, object)
+            for db in self._couchdb.get_databases():
+                info = self._couchdb.get_database(db)
+                mapper = ModelMapper(info, ['db_name',
+                                            'doc_count',
+                                            lambda i: MainWindow.get_update_sequence(i.update_seq),
+                                            lambda i: i.disk_size / 1024 / 1024,
+                                            None,
+                                            None])
+                db_store.append(mapper)
+            self.ui_task(lambda: self.treeview_databases.set_model(db_store))
+
+            tasks_store = Gtk.ListStore(str, str, str, int, bool, str, str, object)
+            for task in self._couchdb.get_active_tasks('replication'):
+                mapper = ModelMapper(task, ['source', 'target', None, 'progress', 'continuous',
+                                            lambda t: time.strftime('%H:%M:%S', time.gmtime(t.started_on)),
+                                            lambda t: time.strftime('%H:%M:%S', time.gmtime(task.updated_on))])
+                tasks_store.append(mapper)
+            self.ui_task(lambda: self.treeview_tasks.set_model(tasks_store))
+
+        self.couchdb_request(request)
 
     def on_comboboxtext_port_changed(self, widget):
         self.checkbutton_secure.set_sensitive(self.port != '443')
@@ -79,58 +102,49 @@ class MainWindow:
         return True
 
     def on_menu_databases_new(self, widget):
-        if self.new_database_dialog.run() == Gtk.ButtonsType.OK:
-            print('new database: ' + self.new_database_dialog.name)
+        if self.new_database_dialog.run() == Gtk.ResponseType.OK:
+            name = self.new_database_dialog.name
+
+            def request():
+                if self._couchdb.create_database(name):
+                    self._couchdb.get_database(name)
+            self.couchdb_request(request)
 
     def on_menu_databases_delete(self, menu):
-        (model, pathlist) = self.treeview_databases.get_selection().get_selected_rows()
-        deleted_paths = []
-        for path in pathlist:
-            row = model[path]
-            db = ModelMapper.get_item_instance(row)
-            if db.db_name[0] != '_':
-                dialog = Gtk.MessageDialog(self._win, 0, Gtk.MessageType.QUESTION, Gtk.ButtonsType.YES_NO,
-                                           "Delete database?")
-                dialog.format_secondary_text(db.db_name)
-                response = dialog.run()
-                dialog.destroy()
-                if response == Gtk.ResponseType.YES:
-                    self._couchdb.delete_database(db.db_name)
-                    deleted_paths.append(path)
+        selected_database_rows = [item for item in self.selected_database_rows if item.db.db_name[0] != '_']
+        if len(selected_database_rows) > 0:
+            result = self.delete_databases_dialog.run(selected_database_rows)
+            if result == Gtk.ResponseType.OK:
+                model = self.treeview_databases.get_model()
 
-        for path in reversed(deleted_paths):
-            iter = model.get_iter(path)
-            model.remove(iter)
+                def request():
+                    for row in reversed(self.delete_databases_dialog.selected_database_rows):
+                        self._couchdb.delete_database(row.db.db_name)
+                        itr = model.get_iter(row.index)
+                        model.remove(itr)
+                self.couchdb_request(request)
 
     def on_menu_databases_browse_futon(self, menu):
-        (model, pathlist) = self.treeview_databases.get_selection().get_selected_rows()
-        if pathlist and len(pathlist):
-            path = pathlist[0]
-            row = model[path]
-            db = ModelMapper.get_item_instance(row)
+        selected_databases = self.selected_database_rows
+        if len(selected_databases) > 0:
+            db = selected_databases[0].db
             url = 'https' if self.secure else 'http'
             url += '://' + self.server + ':' + self.port + '/_utils/database.html?' + db.db_name
             webbrowser.open_new_tab(url)
 
     def on_menu_databases_browse_alldocs(self, menu):
-        (model, pathlist) = self.treeview_databases.get_selection().get_selected_rows()
-        if pathlist and len(pathlist):
-            path = pathlist[0]
-            row = model[path]
-            db = ModelMapper.get_item_instance(row)
+        selected_databases = self.selected_database_rows
+        if len(selected_databases) > 0:
+            db = selected_databases[0].db
             url = 'https' if self.secure else 'http'
             url += '://' + self.server + ':' + self.port + '/' + db.db_name + '/_all_docs?limit=100'
             webbrowser.open_new_tab(url)
 
     def on_menu_databases_show(self, menu):
         connected = self._couchdb is not None
-        single_row = False
-        multiple_rows = False
-
-        if connected:
-            (model, pathlist) = self.treeview_databases.get_selection().get_selected_rows()
-            single_row = pathlist and len(pathlist) == 1
-            multiple_rows = pathlist and len(pathlist) > 1
+        selected_databases = self.selected_database_rows
+        single_row = len(selected_databases) == 1
+        multiple_rows = len(selected_databases) > 1
 
         self.menuitem_databases_new.set_sensitive(connected)
         self.menuitem_databases_browse_futon.set_sensitive(single_row)
@@ -154,10 +168,8 @@ class MainWindow:
         def invoke():
             nonlocal result, finished
 
-            if self.credentials_dialog.run() == Gtk.ButtonsType.OK:
-                username = self.credentials_dialog.username
-                password = self.credentials_dialog.password
-                result = username, password
+            if self.credentials_dialog.run() == Gtk.ResponseType.OK:
+                result = self.credentials_dialog.credentials
             else:
                 result = None
 
@@ -182,6 +194,17 @@ class MainWindow:
     def secure(self):
         secure = self.checkbutton_secure.get_active()
         return secure or self.port == '443'
+
+    @property
+    def selected_database_rows(self):
+        rows = []
+        (model, pathlist) = self.treeview_databases.get_selection().get_selected_rows()
+        if pathlist and len(pathlist):
+            for path in pathlist:
+                row = model[path]
+                db = ModelMapper.get_item_instance(row)
+                rows.append(self.SelectedDatabaseRow(path, db))
+        return rows
 
     @staticmethod
     def get_update_sequence(val):

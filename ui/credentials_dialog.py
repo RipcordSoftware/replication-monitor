@@ -1,6 +1,10 @@
-from gi.repository import Gtk, Gdk, GObject
+from collections import namedtuple
+from gi.repository import Gtk
+
 
 class CredentialsDialog:
+    Credentials = namedtuple('Credentials', 'username password')
+
     _username = None
     _password = None
 
@@ -16,10 +20,10 @@ class CredentialsDialog:
     def on_button_credentials_dialog_ok(self, button):
         self._username = self.entry_username.get_text()
         self._password = self.entry_password.get_text()
-        self._win.response(Gtk.ButtonsType.OK)
+        self._win.response(Gtk.ResponseType.OK)
 
     def on_button_credentials_dialog_cancel(self, button):
-        self._win.response(Gtk.ButtonsType.CANCEL)
+        self._win.response(Gtk.ResponseType.CANCEL)
 
     def on_entry_username_changed(self, text):
         text = self.entry_username.get_text()
@@ -32,3 +36,7 @@ class CredentialsDialog:
     @property
     def password(self):
         return self._password
+
+    @property
+    def credentials(self):
+        return self.Credentials(self.username, self.password)

@@ -176,7 +176,8 @@
                         <child>
                           <object class="GtkTreeViewColumn" id="treeviewcolumn1">
                             <property name="resizable">True</property>
-                            <property name="min_width">300</property>
+                            <property name="sizing">fixed</property>
+                            <property name="fixed_width">300</property>
                             <property name="title" translatable="yes">Source</property>
                             <child>
                               <object class="GtkCellRendererText" id="cellrenderertext1"/>
@@ -189,7 +190,8 @@
                         <child>
                           <object class="GtkTreeViewColumn" id="treeviewcolumn2">
                             <property name="resizable">True</property>
-                            <property name="min_width">300</property>
+                            <property name="sizing">fixed</property>
+                            <property name="fixed_width">300</property>
                             <property name="title" translatable="yes">Target</property>
                             <child>
                               <object class="GtkCellRendererText" id="cellrenderertext2"/>
@@ -202,7 +204,8 @@
                         <child>
                           <object class="GtkTreeViewColumn" id="treeviewcolumn3">
                             <property name="resizable">True</property>
-                            <property name="min_width">80</property>
+                            <property name="sizing">fixed</property>
+                            <property name="fixed_width">80</property>
                             <property name="title" translatable="yes">State</property>
                             <child>
                               <object class="GtkCellRendererText" id="cellrenderertext3"/>
@@ -215,7 +218,8 @@
                         <child>
                           <object class="GtkTreeViewColumn" id="treeviewcolumn4">
                             <property name="resizable">True</property>
-                            <property name="min_width">80</property>
+                            <property name="sizing">fixed</property>
+                            <property name="fixed_width">80</property>
                             <property name="title" translatable="yes">Progress</property>
                             <child>
                               <object class="GtkCellRendererText" id="cellrenderertext4"/>
@@ -228,7 +232,8 @@
                         <child>
                           <object class="GtkTreeViewColumn" id="treeviewcolumn5">
                             <property name="resizable">True</property>
-                            <property name="min_width">80</property>
+                            <property name="sizing">fixed</property>
+                            <property name="fixed_width">90</property>
                             <property name="title" translatable="yes">Continuous</property>
                             <child>
                               <object class="GtkCellRendererText" id="cellrenderertext5"/>
@@ -241,7 +246,8 @@
                         <child>
                           <object class="GtkTreeViewColumn" id="treeviewcolumn6">
                             <property name="resizable">True</property>
-                            <property name="min_width">120</property>
+                            <property name="sizing">fixed</property>
+                            <property name="fixed_width">120</property>
                             <property name="title" translatable="yes">Started</property>
                             <child>
                               <object class="GtkCellRendererText" id="cellrenderertext6"/>
@@ -254,7 +260,8 @@
                         <child>
                           <object class="GtkTreeViewColumn" id="treeviewcolumn7">
                             <property name="resizable">True</property>
-                            <property name="min_width">120</property>
+                            <property name="sizing">fixed</property>
+                            <property name="fixed_width">120</property>
                             <property name="title" translatable="yes">Updated</property>
                             <child>
                               <object class="GtkCellRendererText" id="cellrenderertext7"/>
@@ -315,7 +322,8 @@
                     <child>
                       <object class="GtkTreeViewColumn" id="treeviewcolumn8">
                         <property name="resizable">True</property>
-                        <property name="min_width">220</property>
+                        <property name="sizing">fixed</property>
+                        <property name="fixed_width">220</property>
                         <property name="title" translatable="yes">Database</property>
                         <child>
                           <object class="GtkCellRendererText" id="cellrenderertext8"/>
@@ -328,7 +336,8 @@
                     <child>
                       <object class="GtkTreeViewColumn" id="treeviewcolumn9">
                         <property name="resizable">True</property>
-                        <property name="min_width">80</property>
+                        <property name="sizing">fixed</property>
+                        <property name="fixed_width">80</property>
                         <property name="title" translatable="yes">Count</property>
                         <child>
                           <object class="GtkCellRendererText" id="cellrenderertext9">
@@ -343,7 +352,8 @@
                     <child>
                       <object class="GtkTreeViewColumn" id="treeviewcolumn10">
                         <property name="resizable">True</property>
-                        <property name="min_width">80</property>
+                        <property name="sizing">fixed</property>
+                        <property name="fixed_width">90</property>
                         <property name="title" translatable="yes">Update Seq</property>
                         <child>
                           <object class="GtkCellRendererText" id="cellrenderertext10">
@@ -358,7 +368,8 @@
                     <child>
                       <object class="GtkTreeViewColumn" id="treeviewcolumn11">
                         <property name="resizable">True</property>
-                        <property name="min_width">80</property>
+                        <property name="sizing">fixed</property>
+                        <property name="fixed_width">80</property>
                         <property name="title" translatable="yes">Size (MB)</property>
                         <child>
                           <object class="GtkCellRendererText" id="cellrenderertext11">
@@ -373,7 +384,8 @@
                     <child>
                       <object class="GtkTreeViewColumn" id="treeviewcolumn12">
                         <property name="resizable">True</property>
-                        <property name="min_width">140</property>
+                        <property name="sizing">fixed</property>
+                        <property name="fixed_width">140</property>
                         <property name="title" translatable="yes">Targets</property>
                         <child>
                           <object class="GtkCellRendererText" id="cellrenderertext12"/>
@@ -386,7 +398,8 @@
                     <child>
                       <object class="GtkTreeViewColumn" id="treeviewcolumn13">
                         <property name="resizable">True</property>
-                        <property name="min_width">140</property>
+                        <property name="sizing">fixed</property>
+                        <property name="fixed_width">140</property>
                         <property name="title" translatable="yes">Sources</property>
                         <child>
                           <object class="GtkCellRendererText" id="cellrenderertext13"/>
@@ -420,6 +433,7 @@
     <property name="resizable">False</property>
     <property name="modal">True</property>
     <property name="window_position">center-on-parent</property>
+    <property name="destroy_with_parent">True</property>
     <property name="type_hint">dialog</property>
     <property name="skip_taskbar_hint">True</property>
     <property name="transient_for">applicationwindow</property>
@@ -543,10 +557,157 @@
       </object>
     </child>
   </object>
+  <object class="GtkDialog" id="dialog_delete_databases">
+    <property name="can_focus">False</property>
+    <property name="title" translatable="yes">Delete Database</property>
+    <property name="modal">True</property>
+    <property name="window_position">center-on-parent</property>
+    <property name="destroy_with_parent">True</property>
+    <property name="type_hint">dialog</property>
+    <property name="skip_taskbar_hint">True</property>
+    <property name="transient_for">applicationwindow</property>
+    <property name="has_resize_grip">True</property>
+    <signal name="show" handler="on_dialog_delete_databases_show" swapped="no"/>
+    <child internal-child="vbox">
+      <object class="GtkBox" id="dialog-vbox3">
+        <property name="width_request">300</property>
+        <property name="height_request">100</property>
+        <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <child internal-child="action_area">
+          <object class="GtkButtonBox" id="dialog-action_area3">
+            <property name="can_focus">False</property>
+            <property name="margin_right">4</property>
+            <property name="margin_bottom">4</property>
+            <property name="layout_style">end</property>
+            <child>
+              <object class="GtkButton" id="button_delete_databases_dialog_ok">
+                <property name="label">gtk-ok</property>
+                <property name="visible">True</property>
+                <property name="sensitive">False</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_stock">True</property>
+                <property name="always_show_image">True</property>
+                <signal name="clicked" handler="on_button_delete_databases_dialog_ok" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="button_delete_databases_dialog_cancel">
+                <property name="label">gtk-cancel</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_stock">True</property>
+                <property name="always_show_image">True</property>
+                <signal name="clicked" handler="on_button_delete_databases_dialog_cancel" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkBox" id="box3">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="margin_bottom">4</property>
+            <property name="orientation">vertical</property>
+            <child>
+              <object class="GtkLabel" id="label7">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="halign">start</property>
+                <property name="label" translatable="yes">&lt;b&gt;Databases:&lt;/b&gt;</property>
+                <property name="use_markup">True</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkScrolledWindow" id="scrolledwindow3">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="shadow_type">in</property>
+                <property name="min_content_height">200</property>
+                <child>
+                  <object class="GtkTreeView" id="treeview_delete_databases">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <child internal-child="selection">
+                      <object class="GtkTreeSelection" id="treeview-selection3"/>
+                    </child>
+                    <child>
+                      <object class="GtkTreeViewColumn" id="treeviewcolumn14">
+                        <property name="resizable">True</property>
+                        <property name="sizing">fixed</property>
+                        <property name="fixed_width">200</property>
+                        <property name="title" translatable="yes">Name</property>
+                        <child>
+                          <object class="GtkCellRendererText" id="cellrenderertext14"/>
+                          <attributes>
+                            <attribute name="text">0</attribute>
+                          </attributes>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkTreeViewColumn" id="treeviewcolumn15">
+                        <property name="resizable">True</property>
+                        <property name="sizing">fixed</property>
+                        <property name="title" translatable="yes">Delete</property>
+                        <child>
+                          <object class="GtkCellRendererToggle" id="cellrenderertoggle_delete">
+                            <signal name="toggled" handler="on_cellrenderertoggle_delete_toggled" swapped="no"/>
+                          </object>
+                          <attributes>
+                            <attribute name="active">1</attribute>
+                          </attributes>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+  </object>
   <object class="GtkDialog" id="dialog_new_database">
     <property name="can_focus">False</property>
     <property name="title" translatable="yes">New Database</property>
+    <property name="resizable">False</property>
     <property name="window_position">center-on-parent</property>
+    <property name="destroy_with_parent">True</property>
     <property name="type_hint">dialog</property>
     <property name="skip_taskbar_hint">True</property>
     <property name="transient_for">applicationwindow</property>
@@ -651,41 +812,7 @@
     <property name="can_focus">False</property>
     <signal name="realize" handler="on_menu_databases_realize" swapped="no"/>
     <signal name="show" handler="on_menu_databases_show" swapped="no"/>
-    <child>
-      <object class="GtkMenuItem" id="menuitem_databases_browse">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">Browse</property>
-        <property name="use_underline">True</property>
-        <child type="submenu">
-          <object class="GtkMenu" id="menu2">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <child>
-              <object class="GtkMenuItem" id="menuitem_databases_browse_futon">
-                <property name="visible">True</property>
-                <property name="sensitive">False</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Futon</property>
-                <property name="use_underline">True</property>
-                <signal name="activate" handler="on_menu_databases_browse_futon" swapped="no"/>
-              </object>
-            </child>
-            <child>
-              <object class="GtkMenuItem" id="menuitem_databases_browse_alldocs">
-                <property name="visible">True</property>
-                <property name="sensitive">False</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">All Docs (top 100)</property>
-                <property name="use_underline">True</property>
-                <signal name="activate" handler="on_menu_databases_browse_alldocs" swapped="no"/>
-              </object>
-            </child>
-          </object>
-        </child>
-      </object>
-    </child>
-    <child>
+        <child>
       <object class="GtkMenuItem" id="menuitem_database">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
@@ -722,6 +849,40 @@
                 <property name="can_focus">False</property>
                 <property name="label" translatable="yes">Compact</property>
                 <property name="use_underline">True</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="GtkMenuItem" id="menuitem_databases_browse">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">Browse</property>
+        <property name="use_underline">True</property>
+        <child type="submenu">
+          <object class="GtkMenu" id="menu2">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <child>
+              <object class="GtkMenuItem" id="menuitem_databases_browse_futon">
+                <property name="visible">True</property>
+                <property name="sensitive">False</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">Futon</property>
+                <property name="use_underline">True</property>
+                <signal name="activate" handler="on_menu_databases_browse_futon" swapped="no"/>
+              </object>
+            </child>
+            <child>
+              <object class="GtkMenuItem" id="menuitem_databases_browse_alldocs">
+                <property name="visible">True</property>
+                <property name="sensitive">False</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">All Docs (top 100)</property>
+                <property name="use_underline">True</property>
+                <signal name="activate" handler="on_menu_databases_browse_alldocs" swapped="no"/>
               </object>
             </child>
           </object>
