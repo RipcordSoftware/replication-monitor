@@ -24,10 +24,8 @@ class MainWindow:
     _couchdb = None
 
     def __init__(self, builder):
-        self._win = builder.get_object('applicationwindow', target=self)
-        builder.get_children('applicationwindow', self)
-        self._database_menu = builder.get_object('menu_databases', target=self)
-        builder.get_children('menu_databases', self)
+        self._win = builder.get_object('applicationwindow', target=self, include_children=True)
+        self._database_menu = builder.get_object('menu_databases', target=self, include_children=True)
         self.credentials_dialog = CredentialsDialog(builder)
         self.new_database_dialog = NewDatabaseDialog(builder)
         self.delete_databases_dialog = DeleteDatabasesDialog(builder)

@@ -7,8 +7,7 @@ class NewDatabaseDialog:
     _name = None
 
     def __init__(self, builder):
-        self._win = builder.get_object('dialog_new_database', target=self)
-        builder.get_children('dialog_new_database', self)
+        self._win = builder.get_object('dialog_new_database', target=self, include_children=True)
 
     def on_dialog_new_database_show(self, dialog):
         self.entry_new_database_name.set_text('')

@@ -9,8 +9,7 @@ class CredentialsDialog:
     _password = None
 
     def __init__(self, builder):
-        self._win = builder.get_object('dialog_credentials', target=self)
-        builder.get_children('dialog_credentials', self)
+        self._win = builder.get_object('dialog_credentials', target=self, include_children=True)
 
     def run(self):
         result = self._win.run()

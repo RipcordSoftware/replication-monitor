@@ -9,8 +9,7 @@ class DeleteDatabasesDialog:
     _selected_database_rows = None
 
     def __init__(self, builder):
-        self._win = builder.get_object('dialog_delete_databases', target=self)
-        builder.get_children('dialog_delete_databases', self)
+        self._win = builder.get_object('dialog_delete_databases', target=self, include_children=True)
 
     def on_dialog_delete_databases_show(self, dialog):
         model = Gtk.ListStore(str, bool, object)
