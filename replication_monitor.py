@@ -53,7 +53,7 @@ class MainWindow:
                     func()
                 except CouchDBException as e:
                     self.ui_task(lambda ex=e: print('Error: %d' % ex.status))
-                except Exception as ex:
+                except Exception as e:
                     self.ui_task(lambda ex=e: print('Error!!'))
                 finally:
                     self.ui_task(lambda: self._win.get_window().set_cursor(None))
