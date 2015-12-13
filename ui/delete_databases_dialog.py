@@ -1,5 +1,4 @@
 from gi.repository import Gtk
-from pyatspi import selection
 
 from lib.model_mapper import ModelMapper
 
