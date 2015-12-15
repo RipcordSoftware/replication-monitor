@@ -19,6 +19,12 @@ class MainWindow:
     _couchdb = None
 
     def __init__(self, builder):
+        self._database_model = Gtk.ListStore(str, int, int, int, str, str, object)
+        self._database_model.set_sort_func(0,
+                                           lambda m, x, y, u:
+                                           MainWindow.compare_strings(ModelMapper.get_item_instance_from_model(m, x).db_name,
+                                                                      ModelMapper.get_item_instance_from_model(m, y).db_name))
+
         self._win = builder.get_object('applicationwindow', target=self, include_children=True)
         self._database_menu = builder.get_object('menu_databases', target=self, include_children=True)
         self.credentials_dialog = CredentialsDialog(builder)
@@ -49,7 +55,7 @@ class MainWindow:
                 except CouchDBException as e:
                     self.ui_task(lambda ex=e: print('Error: %d' % ex.status))
                 except Exception as e:
-                    self.ui_task(lambda ex=e: print('Error!!'))
+                    self.ui_task(lambda ex=e: print('Error: %s' % str(ex)))
                 finally:
                     self.ui_task(lambda: self._win.get_window().set_cursor(None))
 
@@ -60,17 +66,7 @@ class MainWindow:
         self._couchdb = self.get_couchdb()
 
         def request():
-            db_store = Gtk.ListStore(str, int, int, int, str, str, object)
-            for db in self._couchdb.get_databases():
-                info = self._couchdb.get_database(db)
-                mapper = ModelMapper(info, ['db_name',
-                                            'doc_count',
-                                            lambda i: MainWindow.get_update_sequence(i.update_seq),
-                                            lambda i: i.disk_size / 1024 / 1024,
-                                            None,
-                                            None])
-                db_store.append(mapper)
-            self.ui_task(lambda: self.treeview_databases.set_model(db_store))
+            self.update_databases()
 
             tasks_store = Gtk.ListStore(str, str, str, int, bool, str, str, object)
             for task in self._couchdb.get_active_tasks('replication'):
@@ -81,6 +77,45 @@ class MainWindow:
             self.ui_task(lambda: self.treeview_tasks.set_model(tasks_store))
 
         self.couchdb_request(request)
+
+    def update_databases(self, clear=True):
+        old_databases = {}
+        new_databases = []
+        model = self._database_model
+
+        if clear:
+            model.clear()
+        else:
+            itr = model.get_iter_first()
+            while itr is not None:
+                db = ModelMapper.get_item_instance_from_model(model, itr)
+                old_databases[db.db_name] = model.get_path(itr)
+                itr = model.iter_next(itr)
+
+        for name in self._couchdb.get_databases():
+            info = self._couchdb.get_database(name)
+            mapper = ModelMapper(info, ['db_name',
+                                        'doc_count',
+                                        lambda db: MainWindow.get_update_sequence(db.update_seq),
+                                        lambda db: db.disk_size / 1024 / 1024,
+                                        None,
+                                        None])
+            if clear:
+                new_databases.append(mapper)
+            else:
+                i = old_databases.pop(name, None)
+                if i is not None:
+                    model[i] = mapper
+                else:
+                    new_databases.append(mapper)
+
+        for db in new_databases:
+            model.append(db)
+
+        self.treeview_databases.set_model(model)
+
+    def on_menu_databases_refresh(self, menu):
+        self.update_databases(clear=False)
 
     def on_comboboxtext_port_changed(self, widget):
         self.checkbutton_secure.set_sensitive(self.port != '443')
@@ -148,6 +183,7 @@ class MainWindow:
         multiple_rows = len(selected_databases) > 1
 
         self.menuitem_databases_new.set_sensitive(connected)
+        self.menuitem_databases_refresh.set_sensitive(connected)
         self.menuitem_databases_browse_futon.set_sensitive(single_row)
         self.menuitem_databases_browse_fauxton.set_sensitive(single_row)
         self.menuitem_databases_browse_alldocs.set_sensitive(single_row)
@@ -222,3 +258,12 @@ class MainWindow:
             seq = val
 
         return seq
+
+    @staticmethod
+    def compare_strings(a, b):
+        if a < b:
+            return -1
+        elif a > b:
+            return 1
+        else:
+            return 0

@@ -5,11 +5,11 @@ class ModelMapper:
         self._mapper.append(self)
 
     @property
-    def get_item(self):
+    def item(self):
         return self._item
 
     @property
-    def get_mapper(self):
+    def mapper(self):
         return self._mapper
 
     def __getitem__(self, index):
@@ -31,3 +31,8 @@ class ModelMapper:
     @staticmethod
     def get_item_instance(row):
         return row[-1]
+
+    @staticmethod
+    def get_item_instance_from_model(model, itr):
+        cols = model.get_n_columns()
+        return model.get(itr, cols - 1)[0] if cols > 0 else None
