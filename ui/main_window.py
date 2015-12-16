@@ -32,9 +32,6 @@ class MainWindow:
         self.delete_databases_dialog = DeleteDatabasesDialog(builder)
         self._win.show_all()
 
-    def on_delete(self, widget, data):
-        Gtk.main_quit()
-
     @staticmethod
     def ui_task(func):
         def task():
@@ -62,22 +59,6 @@ class MainWindow:
             thread = threading.Thread(target=task)
             thread.start()
 
-    def on_button_connect(self, button):
-        self._couchdb = self.get_couchdb()
-
-        def request():
-            self.update_databases()
-
-            tasks_store = Gtk.ListStore(str, str, str, int, bool, str, str, object)
-            for task in self._couchdb.get_active_tasks('replication'):
-                mapper = ModelMapper(task, ['source', 'target', None, 'progress', 'continuous',
-                                            lambda t: time.strftime('%H:%M:%S', time.gmtime(t.started_on)),
-                                            lambda t: time.strftime('%H:%M:%S', time.gmtime(task.updated_on))])
-                tasks_store.append(mapper)
-            self.ui_task(lambda: self.treeview_tasks.set_model(tasks_store))
-
-        self.couchdb_request(request)
-
     def update_databases(self, clear=True):
         old_databases = {}
         new_databases = []
@@ -94,25 +75,48 @@ class MainWindow:
 
         for name in self._couchdb.get_databases():
             info = self._couchdb.get_database(name)
-            mapper = ModelMapper(info, ['db_name',
-                                        'doc_count',
-                                        lambda db: MainWindow.get_update_sequence(db.update_seq),
-                                        lambda db: db.disk_size / 1024 / 1024,
-                                        None,
-                                        None])
+            row = MainWindow.new_database_row(info)
+
             if clear:
-                new_databases.append(mapper)
+                new_databases.append(row)
             else:
                 i = old_databases.pop(name, None)
                 if i is not None:
-                    model[i] = mapper
+                    model[i] = row
                 else:
-                    new_databases.append(mapper)
+                    new_databases.append(row)
 
         for db in new_databases:
             model.append(db)
 
         self.treeview_databases.set_model(model)
+
+    @staticmethod
+    def new_database_row(db):
+        return ModelMapper(db, [
+                            'db_name',
+                            'doc_count',
+                            lambda db: MainWindow.get_update_sequence(db.update_seq),
+                            lambda db: db.disk_size / 1024 / 1024,
+                            None,
+                            None])
+
+    # region Event handlers
+    def on_button_connect(self, button):
+        self._couchdb = self.get_couchdb()
+
+        def request():
+            self.update_databases()
+
+            tasks_store = Gtk.ListStore(str, str, str, int, bool, str, str, object)
+            for task in self._couchdb.get_active_tasks('replication'):
+                mapper = ModelMapper(task, ['source', 'target', None, 'progress', 'continuous',
+                                            lambda t: time.strftime('%H:%M:%S', time.gmtime(t.started_on)),
+                                            lambda t: time.strftime('%H:%M:%S', time.gmtime(task.updated_on))])
+                tasks_store.append(mapper)
+            self.ui_task(lambda: self.treeview_tasks.set_model(tasks_store))
+
+        self.couchdb_request(request)
 
     def on_menu_databases_refresh(self, menu):
         self.update_databases(clear=False)
@@ -134,8 +138,10 @@ class MainWindow:
             name = self.new_database_dialog.name
 
             def request():
-                if self._couchdb.create_database(name):
-                    self._couchdb.get_database(name)
+                self._couchdb.create_database(name)
+                db = self._couchdb.get_database(name)
+                row = MainWindow.new_database_row(db)
+                self._database_model.append(row)
             self.couchdb_request(request)
 
     def on_menu_databases_delete(self, menu):
@@ -193,8 +199,9 @@ class MainWindow:
     def on_menu_databases_realize(self, menu):
         self.on_menu_databases_show(menu)
 
-    def show_databases_popup(self, menu, event):
-        self._database_menu.popup(None, None, None, None, event.button, event.time)
+    def on_delete(self, widget, data):
+        Gtk.main_quit()
+    # endregion
 
     def get_couchdb(self):
         return CouchDB(self.server, self.port, self.secure, self.get_credentials)
@@ -236,9 +243,9 @@ class MainWindow:
     @property
     def selected_database_rows(self):
         rows = []
-        (model, pathlist) = self.treeview_databases.get_selection().get_selected_rows()
-        if pathlist and len(pathlist):
-            for path in pathlist:
+        (model, path_list) = self.treeview_databases.get_selection().get_selected_rows()
+        if path_list and len(path_list):
+            for path in path_list:
                 row = model[path]
                 db = ModelMapper.get_item_instance(row)
                 rows.append(self.SelectedDatabaseRow(path, db))
