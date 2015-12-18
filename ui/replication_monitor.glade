@@ -107,9 +107,6 @@
               </packing>
             </child>
             <child>
-              <placeholder/>
-            </child>
-            <child>
               <object class="GtkButton" id="buttonConnect">
                 <property name="label">gtk-connect</property>
                 <property name="visible">True</property>
@@ -123,18 +120,22 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">6</property>
+                <property name="position">5</property>
               </packing>
             </child>
             <child>
-              <object class="GtkCheckButton" id="checkbuttonAutoUpdates">
-                <property name="label" translatable="yes">Auto Updates</property>
+              <placeholder/>
+            </child>
+            <child>
+              <object class="GtkCheckButton" id="checkbuttonAutoUpdate">
+                <property name="label" translatable="yes">Auto Update</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">False</property>
                 <property name="tooltip_text" translatable="yes">When checked the replication and database windows will update automatically</property>
                 <property name="xalign">0</property>
                 <property name="draw_indicator">True</property>
+                <signal name="toggled" handler="on_auto_update" swapped="no"/>
               </object>
               <packing>
                 <property name="expand">False</property>

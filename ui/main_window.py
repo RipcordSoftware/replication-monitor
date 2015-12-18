@@ -18,26 +18,72 @@ class MainWindow:
 
     _couchdb = None
 
-    def __init__(self, builder):
-        self._database_model = Gtk.ListStore(str, int, int, int, str, str, object)
-        self._database_model.set_sort_func(0,
-                                           lambda m, x, y, u:
-                                           MainWindow.compare_strings(ModelMapper.get_item_instance_from_model(m, x).db_name,
-                                                                      ModelMapper.get_item_instance_from_model(m, y).db_name))
+    _auto_update = False
+    _auto_update_running = False
+    _auto_update_thread = None
+    _auto_update_exit = threading.Event()
 
+    def __init__(self, builder):
         self._win = builder.get_object('applicationwindow', target=self, include_children=True)
         self._database_menu = builder.get_object('menu_databases', target=self, include_children=True)
         self.credentials_dialog = CredentialsDialog(builder)
         self.new_database_dialog = NewDatabaseDialog(builder)
         self.delete_databases_dialog = DeleteDatabasesDialog(builder)
+
+        self._database_model = Gtk.ListStore(str, int, int, int, str, str, object)
+        self.treeview_databases.set_model(self._database_model)
+
+        self._replication_tasks_model = Gtk.ListStore(str, str, str, int, bool, str, str, object)
+        self.treeview_tasks.set_model(self._replication_tasks_model)
+
+        def compare_string_cols(name):
+            def compare_strings(a, b):
+                return -1 if a < b else 1 if a > b else 0
+
+            def callback(m, x, y, _):
+                item_x = ModelMapper.get_item_instance_from_model(m, x)
+                item_y = ModelMapper.get_item_instance_from_model(m, y)
+                return compare_strings(getattr(item_x, name), getattr(item_y, name))
+            return callback
+
+        self._database_model.set_sort_func(0, compare_string_cols('db_name'))
+
+        self._replication_tasks_model.set_sort_func(0, compare_string_cols('source'))
+        self._replication_tasks_model.set_sort_func(1, compare_string_cols('target'))
+        self._replication_tasks_model.set_sort_func(2, compare_string_cols('state'))
+
+        self._auto_update_thread = threading.Thread(target=self.auto_update_handler)
+        self._auto_update_thread.daemon = True
+        self._auto_update_thread.start()
+
         self._win.show_all()
+
+    def auto_update_handler(self):
+        while not self._auto_update_exit.wait(5):
+            if self._couchdb and self._auto_update and not self._auto_update_running:
+                def task():
+                    try:
+                        self._auto_update_running = True
+                        self._replication_tasks_model.clear()
+                        self.update_replication_tasks()
+                        self.update_databases()
+                    finally:
+                        self._auto_update_running = False
+                thread = threading.Thread(target=task)
+                thread.daemon = True
+                thread.start()
 
     @staticmethod
     def ui_task(func):
         def task():
             nonlocal func
             func()
-        GObject.idle_add(task)
+
+        thread = threading.current_thread()
+        if thread.name is not 'MainThread':
+            GObject.idle_add(task)
+        else:
+            task()
 
     def couchdb_request(self, func):
         if self._couchdb:
@@ -50,76 +96,90 @@ class MainWindow:
                 try:
                     func()
                 except CouchDBException as e:
-                    self.ui_task(lambda ex=e: print('Error: %d' % ex.status))
+                    MainWindow.ui_task(lambda ex=e: print('Error: %d' % ex.status))
                 except Exception as e:
-                    self.ui_task(lambda ex=e: print('Error: %s' % str(ex)))
+                    MainWindow.ui_task(lambda ex=e: print('Error: %s' % str(ex)))
                 finally:
-                    self.ui_task(lambda: self._win.get_window().set_cursor(None))
+                    MainWindow.ui_task(lambda: self._win.get_window().set_cursor(None))
 
             thread = threading.Thread(target=task)
             thread.start()
 
-    def update_databases(self, clear=True):
+    def update_databases(self):
         old_databases = {}
         new_databases = []
         model = self._database_model
 
-        if clear:
-            model.clear()
-        else:
-            itr = model.get_iter_first()
-            while itr is not None:
-                db = ModelMapper.get_item_instance_from_model(model, itr)
-                old_databases[db.db_name] = model.get_path(itr)
-                itr = model.iter_next(itr)
+        itr = model.get_iter_first()
+        while itr is not None:
+            db = ModelMapper.get_item_instance_from_model(model, itr)
+            old_databases[db.db_name] = model.get_path(itr)
+            itr = model.iter_next(itr)
 
         for name in self._couchdb.get_databases():
             info = self._couchdb.get_database(name)
             row = MainWindow.new_database_row(info)
 
-            if clear:
-                new_databases.append(row)
+            i = old_databases.pop(name, None)
+            if i is not None:
+                model[i] = row
             else:
-                i = old_databases.pop(name, None)
-                if i is not None:
-                    model[i] = row
-                else:
-                    new_databases.append(row)
+                new_databases.append(row)
+
+        deleted_database_paths = [path for path in old_databases.values()]
+        for path in reversed(deleted_database_paths):
+            itr = model.get_iter(path)
+            model.remove(itr)
 
         for db in new_databases:
             model.append(db)
 
-        self.treeview_databases.set_model(model)
+    def update_replication_tasks(self):
+        old_tasks = {}
+        new_tasks = []
+        model = self._replication_tasks_model
+
+        for task in self._couchdb.get_active_tasks('replication'):
+            row = MainWindow.new_replication_task_row(task)
+            model.append(row)
 
     @staticmethod
     def new_database_row(db):
         return ModelMapper(db, [
                             'db_name',
                             'doc_count',
-                            lambda db: MainWindow.get_update_sequence(db.update_seq),
-                            lambda db: db.disk_size / 1024 / 1024,
+                            lambda i: MainWindow.get_update_sequence(i.update_seq),
+                            lambda i: i.disk_size / 1024 / 1024,
                             None,
                             None])
 
+    @staticmethod
+    def new_replication_task_row(task):
+        return ModelMapper(task, ['source', 'target', None, 'progress', 'continuous',
+                                  lambda t: time.strftime('%H:%M:%S', time.gmtime(t.started_on)),
+                                  lambda t: time.strftime('%H:%M:%S', time.gmtime(task.updated_on))])
+
     # region Event handlers
     def on_button_connect(self, button):
-        self._couchdb = self.get_couchdb()
+        self._couchdb = None
+        self._replication_tasks_model.clear()
+        self._database_model.clear()
 
-        def request():
-            self.update_databases()
+        try:
+            couchdb = self.get_couchdb()
+            couchdb.connect()
+            self._couchdb = couchdb
 
-            tasks_store = Gtk.ListStore(str, str, str, int, bool, str, str, object)
-            for task in self._couchdb.get_active_tasks('replication'):
-                mapper = ModelMapper(task, ['source', 'target', None, 'progress', 'continuous',
-                                            lambda t: time.strftime('%H:%M:%S', time.gmtime(t.started_on)),
-                                            lambda t: time.strftime('%H:%M:%S', time.gmtime(task.updated_on))])
-                tasks_store.append(mapper)
-            self.ui_task(lambda: self.treeview_tasks.set_model(tasks_store))
+            def request():
+                self.update_databases()
+                self.update_replication_tasks()
 
-        self.couchdb_request(request)
+            self.couchdb_request(request)
+        except Exception as e:
+            MainWindow.ui_task(lambda ex=e: print('Error: %s' % str(ex)))
 
     def on_menu_databases_refresh(self, menu):
-        self.update_databases(clear=False)
+        self.update_databases()
 
     def on_comboboxtext_port_changed(self, widget):
         self.checkbutton_secure.set_sensitive(self.port != '443')
@@ -199,7 +259,12 @@ class MainWindow:
     def on_menu_databases_realize(self, menu):
         self.on_menu_databases_show(menu)
 
+    def on_auto_update(self, button):
+        self._auto_update = self.checkbuttonAutoUpdate.get_active()
+
     def on_delete(self, widget, data):
+        self._auto_update_exit.set()
+        self._auto_update_thread.join()
         Gtk.main_quit()
     # endregion
 
@@ -210,18 +275,15 @@ class MainWindow:
         result = None
         finished = False
 
-        def invoke():
+        def task():
             nonlocal result, finished
-
             if self.credentials_dialog.run() == Gtk.ResponseType.OK:
                 result = self.credentials_dialog.credentials
             else:
                 result = None
-
             finished = True
 
-        GObject.idle_add(invoke)
-
+        MainWindow.ui_task(task)
         while not finished:
             time.sleep(0.5)
 
@@ -266,11 +328,3 @@ class MainWindow:
 
         return seq
 
-    @staticmethod
-    def compare_strings(a, b):
-        if a < b:
-            return -1
-        elif a > b:
-            return 1
-        else:
-            return 0

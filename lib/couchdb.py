@@ -49,10 +49,18 @@ class CouchDB:
             return self._content_type.find('application/json') == 0
 
     _auth = None
+    _auth_active = False
 
     def __init__(self, host, port, secure, get_credentials=None):
         self._conn = HTTPSConnection(host, port) if secure else HTTPConnection(host, port)
         self._get_credentials = get_credentials
+
+    def connect(self):
+        response = self._make_request('/', 'HEAD')
+        if response.status != 200:
+            raise CouchDBException(response)
+        else:
+            return True
 
     def create_database(self, name):
         response = self._make_request('/' + name, 'PUT')
@@ -96,13 +104,19 @@ class CouchDB:
         response = self._conn.getresponse()
         body = response.readall()
 
-        if response.status == 401 and callable(self._get_credentials):
-            creds = self._get_credentials()
-            if creds:
-                auth = creds.username + ':' + creds.password
-                auth = auth.encode()
-                self._auth = b64encode(auth).decode("ascii")
-                return self._make_request(uri, method)
+        if response.status == 401 and callable(self._get_credentials) and not self._auth_active:
+            try:
+                self._auth_active = True
+                creds = self._get_credentials()
+                self._auth_active = False
+
+                if creds:
+                    auth = creds.username + ':' + creds.password
+                    auth = auth.encode()
+                    self._auth = b64encode(auth).decode("ascii")
+                    return self._make_request(uri, method)
+            finally:
+                self._auth_active = False
 
         content_type = response.getheader('content-type')
         if content_type.find('utf-8') >= 0:
@@ -110,7 +124,7 @@ class CouchDB:
         else:
             body = body.decode('ascii')
 
-        if content_type.find('text/plain') == 0 and (body[0] == '{' or body[0] == '['):
+        if content_type.find('text/plain') == 0 and len(body) > 0 and (body[0] == '{' or body[0] == '['):
             content_type = content_type.replace('text/plain', 'application/json')
 
         if content_type.find('application/json') == 0:
