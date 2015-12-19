@@ -64,7 +64,6 @@ class MainWindow:
                 def task():
                     try:
                         self._auto_update_running = True
-                        self._replication_tasks_model.clear()
                         self.update_replication_tasks()
                         self.update_databases()
                     finally:
@@ -135,13 +134,15 @@ class MainWindow:
             model.append(db)
 
     def update_replication_tasks(self):
-        old_tasks = {}
-        new_tasks = []
-        model = self._replication_tasks_model
+        tasks = self._couchdb.get_active_tasks('replication')
 
-        for task in self._couchdb.get_active_tasks('replication'):
-            row = MainWindow.new_replication_task_row(task)
-            model.append(row)
+        def invoke():
+            model = self._replication_tasks_model
+            model.clear()
+            for task in tasks:
+                row = MainWindow.new_replication_task_row(task)
+                model.append(row)
+        MainWindow.ui_task(invoke)
 
     @staticmethod
     def new_database_row(db):
@@ -157,7 +158,7 @@ class MainWindow:
     def new_replication_task_row(task):
         return ModelMapper(task, ['source', 'target', None, 'progress', 'continuous',
                                   lambda t: time.strftime('%H:%M:%S', time.gmtime(t.started_on)),
-                                  lambda t: time.strftime('%H:%M:%S', time.gmtime(task.updated_on))])
+                                  lambda t: time.strftime('%H:%M:%S', time.gmtime(t.updated_on))])
 
     # region Event handlers
     def on_button_connect(self, button):
@@ -167,7 +168,6 @@ class MainWindow:
 
         try:
             couchdb = self.get_couchdb()
-            couchdb.connect()
             self._couchdb = couchdb
 
             def request():
@@ -218,6 +218,16 @@ class MainWindow:
                         model.remove(itr)
                 self.couchdb_request(request)
 
+    def on_menu_databases_backup(self, menu):
+        selected_databases = self.selected_databases
+        if len(selected_databases) == 1 and selected_databases[0].db_name.find('backup$') < 0:
+            source = selected_databases[0].db_name
+            target = 'backup$' + source
+            self.couchdb_request(lambda: self._couchdb.create_replication(source, target, True))
+
+    def on_menu_databases_restore(self, menu):
+        print('restore')
+
     def on_menu_databases_browse_futon(self, menu):
         selected_databases = self.selected_database_rows
         if len(selected_databases) > 0:
@@ -244,12 +254,16 @@ class MainWindow:
 
     def on_menu_databases_show(self, menu):
         connected = self._couchdb is not None
-        selected_databases = self.selected_database_rows
+        selected_databases = self.selected_databases
         single_row = len(selected_databases) == 1
         multiple_rows = len(selected_databases) > 1
+        enable_backup = single_row and selected_databases[0].db_name.find('backup$') < 0
+        enable_restore = single_row and selected_databases[0].db_name.find('backup$') == 0
 
         self.menuitem_databases_new.set_sensitive(connected)
         self.menuitem_databases_refresh.set_sensitive(connected)
+        self.menuitem_databases_backup.set_sensitive(enable_backup)
+        self.menuitem_databases_restore.set_sensitive(enable_restore)
         self.menuitem_databases_browse_futon.set_sensitive(single_row)
         self.menuitem_databases_browse_fauxton.set_sensitive(single_row)
         self.menuitem_databases_browse_alldocs.set_sensitive(single_row)
@@ -312,6 +326,11 @@ class MainWindow:
                 db = ModelMapper.get_item_instance(row)
                 rows.append(self.SelectedDatabaseRow(path, db))
         return rows
+
+    @property
+    def selected_databases(self):
+        rows = self.selected_database_rows
+        return [db for path, db in rows]
 
     @staticmethod
     def get_update_sequence(val):

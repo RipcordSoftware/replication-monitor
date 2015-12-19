@@ -1,4 +1,5 @@
 import json
+import threading
 from collections import namedtuple
 from http.client import HTTPConnection, HTTPSConnection
 from base64 import b64encode
@@ -52,15 +53,10 @@ class CouchDB:
     _auth_active = False
 
     def __init__(self, host, port, secure, get_credentials=None):
-        self._conn = HTTPSConnection(host, port) if secure else HTTPConnection(host, port)
         self._get_credentials = get_credentials
-
-    def connect(self):
-        response = self._make_request('/', 'HEAD')
-        if response.status != 200:
-            raise CouchDBException(response)
-        else:
-            return True
+        self.new_connection = lambda: HTTPSConnection(host, port) if secure else HTTPConnection(host, port)
+        self._conn = self.new_connection()
+        self._conn.connect()
 
     def create_database(self, name):
         response = self._make_request('/' + name, 'PUT')
@@ -95,14 +91,32 @@ class CouchDB:
 
         return tasks
 
-    def _make_request(self, uri, method='GET'):
+    def create_replication(self, source, target, create_target=False, continuous=False):
+        repl = {'source': source, 'target': target, 'create_target': create_target, 'continuous': continuous}
+        json_repl = json.dumps(repl)
+        def request():
+            conn = self.new_connection()
+            self._make_request('/_replicate', 'POST', json_repl, 'application/json', conn)
+            conn.close()
+        thread = threading.Thread(target=request)
+        thread.daemon = True
+        thread.start()
+
+    def _make_request(self, uri, method='GET', body=None, content_type=None, conn=None):
+        if conn is None:
+            conn = self._conn
+
         headers = {}
         if self._auth:
             headers['Authorization'] = 'Basic ' + self._auth
 
-        self._conn.request(method, uri, None, headers)
-        response = self._conn.getresponse()
-        body = response.readall()
+        if (method == 'PUT' or method == 'POST') and body is not None and content_type is not None:
+            headers['Content-Type'] = content_type
+
+        conn.request(method, uri, body, headers)
+
+        response = conn.getresponse()
+        response_body = response.readall()
 
         if response.status == 401 and callable(self._get_credentials) and not self._auth_active:
             try:
@@ -114,21 +128,21 @@ class CouchDB:
                     auth = creds.username + ':' + creds.password
                     auth = auth.encode()
                     self._auth = b64encode(auth).decode("ascii")
-                    return self._make_request(uri, method)
+                    return self._make_request(uri, method, body, content_type, conn)
             finally:
                 self._auth_active = False
 
-        content_type = response.getheader('content-type')
-        if content_type.find('utf-8') >= 0:
-            body = body.decode('utf-8')
+        response_content_type = response.getheader('content-type')
+        if response_content_type.find('utf-8') >= 0:
+            response_body = response_body.decode('utf-8')
         else:
-            body = body.decode('ascii')
+            response_body = response_body.decode('ascii')
 
-        if content_type.find('text/plain') == 0 and len(body) > 0 and (body[0] == '{' or body[0] == '['):
-            content_type = content_type.replace('text/plain', 'application/json')
+        if response_content_type.find('text/plain') == 0 and len(response_body) > 0 and (response_body[0] == '{' or response_body[0] == '['):
+            response_content_type = response_content_type.replace('text/plain', 'application/json')
 
-        if content_type.find('application/json') == 0:
-            body = json.loads(body, object_hook=lambda o: namedtuple('Struct', o.keys())(*o.values()))
+        if response_content_type.find('application/json') == 0:
+            response_body = json.loads(response_body, object_hook=lambda o: namedtuple('Struct', o.keys())(*o.values()))
 
-        return CouchDB.Response(response.status, body, content_type)
+        return CouchDB.Response(response.status, response_body, response_content_type)
 
