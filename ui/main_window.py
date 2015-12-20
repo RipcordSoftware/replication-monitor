@@ -8,6 +8,7 @@ from gi.repository import Gtk, Gdk, GObject
 
 from lib.couchdb import CouchDB, CouchDBException
 from lib.model_mapper import ModelMapper
+from lib.gtk_helper import GtkHelper
 from ui.credentials_dialog import CredentialsDialog
 from ui.new_database_dialog import NewDatabaseDialog
 from ui.delete_databases_dialog import DeleteDatabasesDialog
@@ -19,7 +20,6 @@ class MainWindow:
     _couchdb = None
 
     _auto_update = False
-    _auto_update_running = False
     _auto_update_thread = None
     _auto_update_exit = threading.Event()
 
@@ -60,29 +60,9 @@ class MainWindow:
 
     def auto_update_handler(self):
         while not self._auto_update_exit.wait(5):
-            if self._couchdb and self._auto_update and not self._auto_update_running:
-                def task():
-                    try:
-                        self._auto_update_running = True
-                        self.update_replication_tasks()
-                        self.update_databases()
-                    finally:
-                        self._auto_update_running = False
-                thread = threading.Thread(target=task)
-                thread.daemon = True
-                thread.start()
-
-    @staticmethod
-    def ui_task(func):
-        def task():
-            nonlocal func
-            func()
-
-        thread = threading.current_thread()
-        if thread.name is not 'MainThread':
-            GObject.idle_add(task)
-        else:
-            task()
+            if self._couchdb and self._auto_update:
+                self.update_replication_tasks()
+                self.update_databases()
 
     def couchdb_request(self, func):
         if self._couchdb:
@@ -95,54 +75,61 @@ class MainWindow:
                 try:
                     func()
                 except CouchDBException as e:
-                    MainWindow.ui_task(lambda ex=e: print('Error: %d' % ex.status))
+                    GtkHelper.invoke(lambda ex=e: print('Error: %d' % ex.status))
                 except Exception as e:
-                    MainWindow.ui_task(lambda ex=e: print('Error: %s' % str(ex)))
+                    GtkHelper.invoke(lambda ex=e: print('Error: %s' % str(ex)))
                 finally:
-                    MainWindow.ui_task(lambda: self._win.get_window().set_cursor(None))
+                    GtkHelper.invoke(lambda: self._win.get_window().set_cursor(None))
 
             thread = threading.Thread(target=task)
             thread.start()
 
     def update_databases(self):
-        old_databases = {}
-        new_databases = []
-        model = self._database_model
-
-        itr = model.get_iter_first()
-        while itr is not None:
-            db = ModelMapper.get_item_instance_from_model(model, itr)
-            old_databases[db.db_name] = model.get_path(itr)
-            itr = model.iter_next(itr)
-
+        databases = []
         for name in self._couchdb.get_databases():
-            info = self._couchdb.get_database(name)
-            row = MainWindow.new_database_row(info)
+            db = self._couchdb.get_database(name)
+            databases.append(db)
 
-            i = old_databases.pop(name, None)
-            if i is not None:
-                model[i] = row
-            else:
-                new_databases.append(row)
+        def func():
+            old_databases = {}
+            new_databases = []
+            model = self._database_model
 
-        deleted_database_paths = [path for path in old_databases.values()]
-        for path in reversed(deleted_database_paths):
-            itr = model.get_iter(path)
-            model.remove(itr)
+            itr = model.get_iter_first()
+            while itr is not None:
+                db = ModelMapper.get_item_instance_from_model(model, itr)
+                old_databases[db.db_name] = model.get_path(itr)
+                itr = model.iter_next(itr)
 
-        for db in new_databases:
-            model.append(db)
+            for db in databases:
+                row = MainWindow.new_database_row(db)
+
+                i = old_databases.pop(db.db_name, None)
+                if i is not None:
+                    model[i] = row
+                else:
+                    new_databases.append(row)
+
+            deleted_database_paths = [path for path in old_databases.values()]
+            for path in reversed(deleted_database_paths):
+                itr = model.get_iter(path)
+                model.remove(itr)
+
+            for db in new_databases:
+                model.append(db)
+
+        GtkHelper.invoke(func, async=False)
 
     def update_replication_tasks(self):
         tasks = self._couchdb.get_active_tasks('replication')
 
-        def invoke():
+        def func():
             model = self._replication_tasks_model
             model.clear()
             for task in tasks:
                 row = MainWindow.new_replication_task_row(task)
                 model.append(row)
-        MainWindow.ui_task(invoke)
+        GtkHelper.invoke(func, async=False)
 
     @staticmethod
     def new_database_row(db):
@@ -176,7 +163,7 @@ class MainWindow:
 
             self.couchdb_request(request)
         except Exception as e:
-            MainWindow.ui_task(lambda ex=e: print('Error: %s' % str(ex)))
+            print('Error: %s' % str(e))
 
     def on_menu_databases_refresh(self, menu):
         self.update_databases()
@@ -286,22 +273,13 @@ class MainWindow:
         return CouchDB(self.server, self.port, self.secure, self.get_credentials)
 
     def get_credentials(self):
-        result = None
-        finished = False
-
-        def task():
-            nonlocal result, finished
+        def func():
+            result = None
             if self.credentials_dialog.run() == Gtk.ResponseType.OK:
                 result = self.credentials_dialog.credentials
-            else:
-                result = None
-            finished = True
+            return result
 
-        MainWindow.ui_task(task)
-        while not finished:
-            time.sleep(0.5)
-
-        return result
+        return GtkHelper.invoke(func, async=False)
 
     @property
     def server(self):
