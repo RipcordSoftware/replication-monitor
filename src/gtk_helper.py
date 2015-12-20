@@ -1,5 +1,5 @@
 import threading
-from gi.repository import GObject
+from gi.repository import Gtk, GObject
 
 
 class GtkHelper:
@@ -43,3 +43,10 @@ class GtkHelper:
                 event.wait()
 
         return result
+
+    @staticmethod
+    def run_dialog(win, message_type, buttons_type, msg):
+        dialog = Gtk.MessageDialog(win, 0, message_type, buttons_type, msg)
+        response = dialog.run()
+        dialog.destroy()
+        return response

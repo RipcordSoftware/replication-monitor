@@ -214,12 +214,44 @@ class MainWindow:
     def on_menu_databases_backup(self, menu):
         selected_databases = self.selected_databases
         if len(selected_databases) == 1 and selected_databases[0].db_name.find('backup$') < 0:
-            source = selected_databases[0].db_name
-            target = 'backup$' + source
-            self.couchdb_request(lambda: self._couchdb.create_replication(source, target, True))
+            backup_database = True
+            source_name = selected_databases[0].db_name
+            target_name = 'backup$' + source_name
+            try:
+                self._couchdb.get_database(target_name)
+                response = GtkHelper.run_dialog(self._win, Gtk.MessageType.QUESTION,
+                                                Gtk.ButtonsType.YES_NO,
+                                                "Target database already exists, continue?")
+
+                backup_database = response is Gtk.ResponseType.YES
+                if backup_database:
+                    self._couchdb.delete_database(target_name)
+            except Exception as e:
+                pass
+
+            if backup_database:
+                self.couchdb_request(lambda: self._couchdb.create_replication(source_name, target_name, create_target=True))
 
     def on_menu_databases_restore(self, menu):
-        print('restore')
+        selected_databases = self.selected_databases
+        if len(selected_databases) == 1 and selected_databases[0].db_name.find('backup$') == 0:
+            restore_database = True
+            source_name = selected_databases[0].db_name
+            target_name = source_name[7::]
+            try:
+                self._couchdb.get_database(target_name)
+                response = GtkHelper.run_dialog(self._win, Gtk.MessageType.QUESTION,
+                                                Gtk.ButtonsType.YES_NO,
+                                                "Target database already exists, continue?")
+
+                restore_database = response is Gtk.ResponseType.YES
+                if restore_database:
+                    self._couchdb.delete_database(target_name)
+            except Exception as e:
+                pass
+
+            if restore_database:
+                self.couchdb_request(lambda: self._couchdb.create_replication(source_name, target_name, create_target=True))
 
     def on_menu_databases_browse_futon(self, menu):
         selected_databases = self.selected_database_rows
