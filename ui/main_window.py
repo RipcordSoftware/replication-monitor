@@ -61,8 +61,11 @@ class MainWindow:
     def auto_update_handler(self):
         while not self._auto_update_exit.wait(5):
             if self._couchdb and self._auto_update:
-                self.update_replication_tasks()
-                self.update_databases()
+                try:
+                    self.update_replication_tasks()
+                    self.update_databases()
+                except Exception as e:
+                    self.report_error(e)
 
     def couchdb_request(self, func):
         if self._couchdb:
@@ -74,8 +77,6 @@ class MainWindow:
 
                 try:
                     func()
-                except CouchDBException as e:
-                    self.report_error(e)
                 except Exception as e:
                     self.report_error(e)
                 finally:
