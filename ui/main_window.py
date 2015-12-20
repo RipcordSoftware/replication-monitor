@@ -75,9 +75,9 @@ class MainWindow:
                 try:
                     func()
                 except CouchDBException as e:
-                    GtkHelper.invoke(lambda ex=e: print('Error: %d' % ex.status))
+                    self.report_error(e)
                 except Exception as e:
-                    GtkHelper.invoke(lambda ex=e: print('Error: %s' % str(ex)))
+                    self.report_error(e)
                 finally:
                     GtkHelper.invoke(lambda: self._win.get_window().set_cursor(None))
 
@@ -163,7 +163,10 @@ class MainWindow:
 
             self.couchdb_request(request)
         except Exception as e:
-            print('Error: %s' % str(e))
+            self.report_error(e)
+
+    def on_infobar_warnings_response(self, widget, user_data):
+        self.infobar_warnings.hide()
 
     def on_menu_databases_refresh(self, menu):
         self.update_databases()
@@ -280,6 +283,13 @@ class MainWindow:
             return result
 
         return GtkHelper.invoke(func, async=False)
+
+    def report_error(self, err):
+        def func():
+            text = str(err)
+            self.infobar_warnings_message.set_text(text)
+            self.infobar_warnings.show()
+        GtkHelper.invoke(func)
 
     @property
     def server(self):

@@ -14,6 +14,10 @@ class CouchDBException(Exception):
         return self._response.status
 
     @property
+    def reason(self):
+        return self._response.reason
+
+    @property
     def body(self):
         return self._response.body
 
@@ -25,17 +29,27 @@ class CouchDBException(Exception):
     def is_json(self):
         return self._response.is_json
 
+    def __str__(self):
+        if self.is_json:
+            return '{self.status}: {self.reason} - {self.body.reason}'.format(self=self)
+        else:
+            return '{self.status}: {self.reason}'.format(self=self)
+
 
 class CouchDB:
     class Response:
-        def __init__(self, status, body=None, content_type=None):
-            self._status = status
+        def __init__(self, response, body=None, content_type=None):
+            self._response = response
+            self._content_type = content_type if content_type is not None else response.getheader('content-type')
             self._body = body
-            self._content_type = content_type
 
         @property
         def status(self):
-            return self._status
+            return self._response.status
+
+        @property
+        def reason(self):
+            return self._response.reason
 
         @property
         def body(self):
@@ -144,5 +158,5 @@ class CouchDB:
         if response_content_type.find('application/json') == 0:
             response_body = json.loads(response_body, object_hook=lambda o: namedtuple('Struct', o.keys())(*o.values()))
 
-        return CouchDB.Response(response.status, response_body, response_content_type)
+        return CouchDB.Response(response, response_body, response_content_type)
 
