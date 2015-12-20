@@ -70,7 +70,6 @@ class CouchDB:
         self._get_credentials = get_credentials
         self.new_connection = lambda: HTTPSConnection(host, port) if secure else HTTPConnection(host, port)
         self._conn = self.new_connection()
-        self._conn.connect()
 
     def create_database(self, name):
         response = self._make_request('/' + name, 'PUT')

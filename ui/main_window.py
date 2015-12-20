@@ -23,6 +23,8 @@ class MainWindow:
     _auto_update_thread = None
     _auto_update_exit = threading.Event()
 
+    _watch_cursor = Gdk.Cursor.new(Gdk.CursorType.WATCH)
+
     def __init__(self, builder):
         self._win = builder.get_object('applicationwindow', target=self, include_children=True)
         self._database_menu = builder.get_object('menu_databases', target=self, include_children=True)
@@ -69,8 +71,7 @@ class MainWindow:
 
     def couchdb_request(self, func):
         if self._couchdb:
-            cursor = Gdk.Cursor.new(Gdk.CursorType.WATCH)
-            self._win.get_window().set_cursor(cursor)
+            GtkHelper.invoke(lambda: self._win.get_window().set_cursor(self._watch_cursor), async=False)
 
             def task():
                 nonlocal func
@@ -151,6 +152,7 @@ class MainWindow:
     # region Event handlers
     def on_button_connect(self, button):
         self._couchdb = None
+        self.infobar_warnings.hide()
         self._replication_tasks_model.clear()
         self._database_model.clear()
 
