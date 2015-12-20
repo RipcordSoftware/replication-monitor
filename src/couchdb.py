@@ -115,6 +115,11 @@ class CouchDB:
         thread.daemon = True
         thread.start()
 
+    def compact_database(self, name):
+        response = self._make_request('/' + name + '/_compact', 'POST', None, 'application/json')
+        if response.status != 202 or not response.is_json:
+            raise CouchDBException(response)
+
     def _make_request(self, uri, method='GET', body=None, content_type=None, conn=None):
         if conn is None:
             conn = self._conn
@@ -123,7 +128,7 @@ class CouchDB:
         if self._auth:
             headers['Authorization'] = 'Basic ' + self._auth
 
-        if (method == 'PUT' or method == 'POST') and body is not None and content_type is not None:
+        if (method == 'PUT' or method == 'POST') and content_type is not None:
             headers['Content-Type'] = content_type
 
         conn.request(method, uri, body, headers)

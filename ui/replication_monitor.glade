@@ -979,6 +979,7 @@
                 <property name="can_focus">False</property>
                 <property name="label" translatable="yes">Compact</property>
                 <property name="use_underline">True</property>
+                <signal name="activate" handler="on_menuitem_databases_compact" swapped="no"/>
               </object>
             </child>
           </object>

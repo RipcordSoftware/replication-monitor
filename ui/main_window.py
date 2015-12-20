@@ -253,6 +253,12 @@ class MainWindow:
             if restore_database:
                 self.couchdb_request(lambda: self._couchdb.create_replication(source_name, target_name, create_target=True))
 
+    def on_menuitem_databases_compact(self, menu):
+        selected_databases = self.selected_databases
+        if len(selected_databases) == 1:
+            name = selected_databases[0].db_name
+            self.couchdb_request(lambda: self._couchdb.compact_database(name))
+
     def on_menu_databases_browse_futon(self, menu):
         selected_databases = self.selected_database_rows
         if len(selected_databases) > 0:
@@ -293,7 +299,7 @@ class MainWindow:
         self.menuitem_databases_browse_fauxton.set_sensitive(single_row)
         self.menuitem_databases_browse_alldocs.set_sensitive(single_row)
         self.menuitem_databases_delete.set_sensitive(single_row or multiple_rows)
-        self.menuitem_databases_compact.set_sensitive(single_row or multiple_rows)
+        self.menuitem_databases_compact.set_sensitive(single_row)
 
     def on_menu_databases_realize(self, menu):
         self.on_menu_databases_show(menu)
