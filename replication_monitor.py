@@ -5,7 +5,7 @@ import sys
 
 from gi.repository import Gtk
 
-from lib.builder import Builder
+from src.builder import Builder
 from ui.main_window import MainWindow
 
 def main():

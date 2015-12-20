@@ -1,6 +1,6 @@
 from gi.repository import Gtk
 
-from lib.model_mapper import ModelMapper
+from src.model_mapper import ModelMapper
 
 
 class DeleteDatabasesDialog:

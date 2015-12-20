@@ -6,9 +6,9 @@ import collections
 
 from gi.repository import Gtk, Gdk, GObject
 
-from lib.couchdb import CouchDB, CouchDBException
-from lib.model_mapper import ModelMapper
-from lib.gtk_helper import GtkHelper
+from src.couchdb import CouchDB, CouchDBException
+from src.model_mapper import ModelMapper
+from src.gtk_helper import GtkHelper
 from ui.credentials_dialog import CredentialsDialog
 from ui.new_database_dialog import NewDatabaseDialog
 from ui.delete_databases_dialog import DeleteDatabasesDialog
