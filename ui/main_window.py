@@ -126,11 +126,33 @@ class MainWindow:
         tasks = self._couchdb.get_active_tasks('replication')
 
         def func():
+            old_tasks = {}
+            new_tasks = []
             model = self._replication_tasks_model
-            model.clear()
+
+            itr = model.get_iter_first()
+            while itr is not None:
+                task = ModelMapper.get_item_instance_from_model(model, itr)
+                old_tasks[task.replication_id] = model.get_path(itr)
+                itr = model.iter_next(itr)
+
             for task in tasks:
                 row = MainWindow.new_replication_task_row(task)
-                model.append(row)
+
+                i = old_tasks.pop(task.replication_id, None)
+                if i is not None:
+                    model[i] = row
+                else:
+                    new_tasks.append(row)
+
+            deleted_replication_task_paths = [path for path in old_tasks.values()]
+            for path in reversed(deleted_replication_task_paths):
+                itr = model.get_iter(path)
+                model.remove(itr)
+
+            for task in new_tasks:
+                model.append(task)
+
         GtkHelper.invoke(func, async=False)
 
     @staticmethod
@@ -145,9 +167,14 @@ class MainWindow:
 
     @staticmethod
     def new_replication_task_row(task):
-        return ModelMapper(task, ['source', 'target', None, 'progress', 'continuous',
-                                  lambda t: time.strftime('%H:%M:%S', time.gmtime(t.started_on)),
-                                  lambda t: time.strftime('%H:%M:%S', time.gmtime(t.updated_on))])
+        return ModelMapper(task, [
+            'source',
+            'target',
+            None,
+            lambda t: getattr(t, 'progress', None),
+            'continuous',
+            lambda t: time.strftime('%H:%M:%S', time.gmtime(t.started_on)),
+            lambda t: time.strftime('%H:%M:%S', time.gmtime(t.updated_on))])
 
     # region Event handlers
     def on_button_connect(self, button):
