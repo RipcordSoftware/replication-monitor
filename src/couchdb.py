@@ -69,7 +69,14 @@ class CouchDB:
     def __init__(self, host, port, secure, get_credentials=None):
         self._get_credentials = get_credentials
         self.new_connection = lambda: HTTPSConnection(host, port) if secure else HTTPConnection(host, port)
-        self._conn = self.new_connection()
+        self._thread_local = threading.local()
+        setattr(self._thread_local, '_conn', self.new_connection())
+
+    @property
+    def _conn(self):
+        if getattr(self._thread_local, '_conn', None) is None:
+            setattr(self._thread_local, '_conn', self.new_connection())
+        return getattr(self._thread_local, '_conn')
 
     def create_database(self, name):
         response = self._make_request('/' + name, 'PUT')
@@ -107,10 +114,13 @@ class CouchDB:
     def create_replication(self, source, target, create_target=False, continuous=False):
         repl = {'source': source, 'target': target, 'create_target': create_target, 'continuous': continuous}
         json_repl = json.dumps(repl)
+
         def request():
-            conn = self.new_connection()
-            self._make_request('/_replicate', 'POST', json_repl, 'application/json', conn)
-            conn.close()
+            try:
+                conn = self.new_connection()
+                self._make_request('/_replicate', 'POST', json_repl, 'application/json', conn)
+            finally:
+                conn.close()
         thread = threading.Thread(target=request)
         thread.daemon = True
         thread.start()
