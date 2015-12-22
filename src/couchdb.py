@@ -78,6 +78,12 @@ class CouchDB:
             setattr(self._thread_local, '_conn', self.new_connection())
         return getattr(self._thread_local, '_conn')
 
+    def get_session(self):
+        response = self._make_request('/_session')
+        if response.status != 200 or not response.is_json:
+            raise CouchDBException(response)
+        return response.body
+
     def create_database(self, name):
         response = self._make_request('/' + name, 'PUT')
         if response.status != 201 or not response.is_json:
@@ -112,18 +118,19 @@ class CouchDB:
         return tasks
 
     def create_replication(self, source, target, create_target=False, continuous=False):
-        repl = {'source': source, 'target': target, 'create_target': create_target, 'continuous': continuous}
-        json_repl = json.dumps(repl)
+        job = {'source': source, 'target': target, 'create_target': create_target, 'continuous': continuous}
 
-        def request():
-            try:
-                conn = self.new_connection()
-                self._make_request('/_replicate', 'POST', json_repl, 'application/json', conn)
-            finally:
-                conn.close()
-        thread = threading.Thread(target=request)
-        thread.daemon = True
-        thread.start()
+        if self._auth is not None:
+            session = self.get_session()
+            user_ctx = session.userCtx
+            job['user_ctx'] = {'name': user_ctx.name, 'roles': user_ctx.roles}
+
+        job_json = json.dumps(job)
+        print(job_json)
+        response = self._make_request('/_replicator', 'POST', job_json, 'application/json')
+        if response.status != 201 or not response.is_json:
+            raise CouchDBException(response)
+        return response.body
 
     def compact_database(self, name):
         response = self._make_request('/' + name + '/_compact', 'POST', None, 'application/json')
