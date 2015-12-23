@@ -1004,6 +1004,7 @@
                     <property name="visible">True</property>
                     <property name="sensitive">False</property>
                     <property name="can_focus">True</property>
+                    <property name="tooltip_text" translatable="yes">The name of the source database</property>
                     <property name="caps_lock_warning">False</property>
                     <property name="input_hints">GTK_INPUT_HINT_NO_SPELLCHECK | GTK_INPUT_HINT_NONE</property>
                   </object>
@@ -1055,6 +1056,7 @@
                             <property name="visible">True</property>
                             <property name="sensitive">False</property>
                             <property name="can_focus">True</property>
+                            <property name="tooltip_text" translatable="yes">The remote server name</property>
                             <property name="width_chars">40</property>
                             <property name="caps_lock_warning">False</property>
                             <property name="input_hints">GTK_INPUT_HINT_NO_SPELLCHECK | GTK_INPUT_HINT_NONE</property>
@@ -1071,6 +1073,7 @@
                             <property name="visible">True</property>
                             <property name="sensitive">False</property>
                             <property name="can_focus">False</property>
+                            <property name="tooltip_text" translatable="yes">The remote server port</property>
                             <property name="active">2</property>
                             <property name="has_entry">True</property>
                             <items>
@@ -1104,6 +1107,7 @@
                             <property name="sensitive">False</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">False</property>
+                            <property name="tooltip_text" translatable="yes">Check to use SSL to secure the remote replication session</property>
                             <property name="xalign">0</property>
                             <property name="draw_indicator">True</property>
                           </object>
@@ -1123,6 +1127,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>
+                    <property name="tooltip_text" translatable="yes">Check to replicate to a remote server</property>
                     <property name="xalign">0</property>
                     <property name="draw_indicator">True</property>
                     <signal name="clicked" handler="on_checkbutton_new_replication_dialog_remote" swapped="no"/>
@@ -1156,6 +1161,7 @@
                   <object class="GtkEntry" id="entry_new_replication_dialog_target">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
+                    <property name="tooltip_text" translatable="yes">The name of the target database</property>
                     <property name="caps_lock_warning">False</property>
                     <property name="input_hints">GTK_INPUT_HINT_NO_SPELLCHECK | GTK_INPUT_HINT_NONE</property>
                     <signal name="changed" handler="on_entry_new_replication_dialog_target_changed" swapped="no"/>
@@ -1173,8 +1179,10 @@
                     <property name="sensitive">False</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
+                    <property name="tooltip_text" translatable="yes">Click to add the target to the list</property>
                     <property name="use_stock">True</property>
                     <property name="always_show_image">True</property>
+                    <signal name="clicked" handler="on_button_new_replication_dialog_add_target" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -1190,24 +1198,34 @@
               </packing>
             </child>
             <child>
-              <object class="GtkTreeView" id="treeview2">
-                <property name="height_request">160</property>
+              <object class="GtkScrolledWindow" id="scrolledwindow4">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="resize_mode">immediate</property>
-                <property name="rubber_banding">True</property>
-                <property name="activate_on_single_click">True</property>
-                <child internal-child="selection">
-                  <object class="GtkTreeSelection" id="treeview-selection5"/>
-                </child>
+                <property name="shadow_type">in</property>
+                <property name="min_content_height">160</property>
                 <child>
-                  <object class="GtkTreeViewColumn" id="treeviewcolumn16">
-                    <property name="title" translatable="yes">Target</property>
+                  <object class="GtkTreeView" id="treeview_new_replication_dialog_targets">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="resize_mode">immediate</property>
+                    <property name="rubber_banding">True</property>
+                    <property name="activate_on_single_click">True</property>
+                    <signal name="row-activated" handler="on_treeview_new_replication_dialog_targets_row_activated" swapped="no"/>
+                    <child internal-child="selection">
+                      <object class="GtkTreeSelection" id="treeview-selection5">
+                        <property name="mode">multiple</property>
+                      </object>
+                    </child>
                     <child>
-                      <object class="GtkCellRendererText" id="cellrenderertext15"/>
-                      <attributes>
-                        <attribute name="text">0</attribute>
-                      </attributes>
+                      <object class="GtkTreeViewColumn" id="treeviewcolumn16">
+                        <property name="title" translatable="yes">Target</property>
+                        <child>
+                          <object class="GtkCellRendererText" id="cellrenderertext15"/>
+                          <attributes>
+                            <attribute name="text">0</attribute>
+                          </attributes>
+                        </child>
+                      </object>
                     </child>
                   </object>
                 </child>
@@ -1223,14 +1241,16 @@
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <child>
-                  <object class="GtkButton" id="button1">
+                  <object class="GtkButton" id="button_new_replication_dialog_add_delete">
                     <property name="label">gtk-delete</property>
                     <property name="visible">True</property>
                     <property name="sensitive">False</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
+                    <property name="tooltip_text" translatable="yes">Remove the selected targets from the list</property>
                     <property name="use_stock">True</property>
                     <property name="always_show_image">True</property>
+                    <signal name="clicked" handler="on_button_new_replication_dialog_add_delete_clicked" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -1279,6 +1299,7 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
+                                <property name="tooltip_text" translatable="yes">Check to configure the replication as continuous</property>
                                 <property name="xalign">0</property>
                                 <property name="draw_indicator">True</property>
                               </object>
@@ -1294,7 +1315,9 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
+                                <property name="tooltip_text" translatable="yes">When checked the target database will be created</property>
                                 <property name="xalign">0</property>
+                                <property name="active">True</property>
                                 <property name="draw_indicator">True</property>
                               </object>
                               <packing>
@@ -1309,6 +1332,7 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
+                                <property name="tooltip_text" translatable="yes">When checked the target database will be dropped before replication is configured</property>
                                 <property name="xalign">0</property>
                                 <property name="draw_indicator">True</property>
                               </object>
@@ -1332,11 +1356,12 @@
                             <property name="spacing">12</property>
                             <property name="homogeneous">True</property>
                             <child>
-                              <object class="GtkRadioButton" id="radiobutton1">
+                              <object class="GtkRadioButton" id="radiobutton_new_replication_dialog_docs_and_designs">
                                 <property name="label" translatable="yes">Docs and Designs</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
+                                <property name="tooltip_text" translatable="yes">Replicate both documents and designs</property>
                                 <property name="xalign">0</property>
                                 <property name="active">True</property>
                                 <property name="draw_indicator">True</property>
@@ -1348,14 +1373,16 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkRadioButton" id="radiobutton2">
+                              <object class="GtkRadioButton" id="radiobutton_new_replication_dialog_only_docs">
                                 <property name="label" translatable="yes">Only Docs</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
+                                <property name="tooltip_text" translatable="yes">Only replicate the database documents</property>
                                 <property name="xalign">0</property>
                                 <property name="active">True</property>
                                 <property name="draw_indicator">True</property>
+                                <property name="group">radiobutton_new_replication_dialog_docs_and_designs</property>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -1364,14 +1391,16 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkRadioButton" id="radiobutton3">
+                              <object class="GtkRadioButton" id="radiobutton_new_replication_dialog_only_designs">
                                 <property name="label" translatable="yes">Only Designs</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
+                                <property name="tooltip_text" translatable="yes">Only replicate the database designs</property>
                                 <property name="xalign">0</property>
                                 <property name="active">True</property>
                                 <property name="draw_indicator">True</property>
+                                <property name="group">radiobutton_new_replication_dialog_docs_and_designs</property>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
