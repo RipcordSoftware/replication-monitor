@@ -12,6 +12,7 @@ from src.gtk_helper import GtkHelper
 from ui.credentials_dialog import CredentialsDialog
 from ui.new_database_dialog import NewDatabaseDialog
 from ui.delete_databases_dialog import DeleteDatabasesDialog
+from ui.new_single_replication_dialog import NewSingleReplicationDialog
 
 
 class MainWindow:
@@ -30,6 +31,7 @@ class MainWindow:
         self._database_menu = builder.get_object('menu_databases', target=self, include_children=True)
         self.credentials_dialog = CredentialsDialog(builder)
         self.new_database_dialog = NewDatabaseDialog(builder)
+        self.new_single_replication_dialog = NewSingleReplicationDialog(builder)
         self.delete_databases_dialog = DeleteDatabasesDialog(builder)
 
         self._database_model = Gtk.ListStore(str, int, int, int, str, str, object)
@@ -310,6 +312,9 @@ class MainWindow:
             url += '://' + self.server + ':' + self.port + '/' + db.db_name + '/_all_docs?limit=100'
             webbrowser.open_new_tab(url)
 
+    def on_menuitem_databases_replication_new(self, menu):
+        self.new_single_replication_dialog.run()
+
     def on_menu_databases_show(self, menu):
         connected = self._couchdb is not None
         selected_databases = self.selected_databases
@@ -327,6 +332,7 @@ class MainWindow:
         self.menuitem_databases_browse_alldocs.set_sensitive(single_row)
         self.menuitem_databases_delete.set_sensitive(single_row or multiple_rows)
         self.menuitem_databases_compact.set_sensitive(single_row)
+        self.menuitem_databases_replication_new.set_sensitive(single_row)
 
     def on_menu_databases_realize(self, menu):
         self.on_menu_databases_show(menu)
