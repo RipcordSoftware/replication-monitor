@@ -42,6 +42,7 @@
                 <property name="tooltip_text" translatable="yes">The name or IP address of the AvanceDB or CouchDB server</property>
                 <property name="width_chars">30</property>
                 <property name="text" translatable="yes">localhost</property>
+                <property name="input_hints">GTK_INPUT_HINT_NO_SPELLCHECK | GTK_INPUT_HINT_NONE</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -80,7 +81,10 @@
                     <property name="tooltip_text" translatable="yes">The port number of the AvanceDB or CouchDB server</property>
                     <property name="max_length">5</property>
                     <property name="width_chars">6</property>
+                    <property name="max_width_chars">5</property>
+                    <property name="caps_lock_warning">False</property>
                     <property name="input_purpose">number</property>
+                    <property name="input_hints">GTK_INPUT_HINT_NO_SPELLCHECK | GTK_INPUT_HINT_NONE</property>
                   </object>
                 </child>
               </object>
@@ -915,7 +919,7 @@
     <property name="can_focus">False</property>
     <property name="title" translatable="yes">New Replication</property>
     <property name="modal">True</property>
-    <property name="type_hint">normal</property>
+    <property name="type_hint">dialog</property>
     <property name="skip_taskbar_hint">True</property>
     <property name="transient_for">applicationwindow</property>
     <property name="has_resize_grip">True</property>
@@ -996,10 +1000,12 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkEntry" id="entry1">
+                  <object class="GtkEntry" id="entry_new_replication_dialog_source">
                     <property name="visible">True</property>
                     <property name="sensitive">False</property>
                     <property name="can_focus">True</property>
+                    <property name="caps_lock_warning">False</property>
+                    <property name="input_hints">GTK_INPUT_HINT_NO_SPELLCHECK | GTK_INPUT_HINT_NONE</property>
                   </object>
                   <packing>
                     <property name="expand">True</property>
@@ -1045,11 +1051,14 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkEntry" id="entry3">
+                          <object class="GtkEntry" id="entry_new_replication_dialog_server">
                             <property name="visible">True</property>
                             <property name="sensitive">False</property>
                             <property name="can_focus">True</property>
                             <property name="width_chars">40</property>
+                            <property name="caps_lock_warning">False</property>
+                            <property name="input_hints">GTK_INPUT_HINT_NO_SPELLCHECK | GTK_INPUT_HINT_NONE</property>
+                            <signal name="changed" handler="on_entry_new_replication_dialog_server_changed" swapped="no"/>
                           </object>
                           <packing>
                             <property name="expand">True</property>
@@ -1058,7 +1067,7 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkComboBoxText" id="comboboxtext1">
+                          <object class="GtkComboBoxText" id="comboboxtext_new_replication_dialog_port">
                             <property name="visible">True</property>
                             <property name="sensitive">False</property>
                             <property name="can_focus">False</property>
@@ -1070,9 +1079,15 @@
                               <item translatable="yes">5984</item>
                               <item translatable="yes">5994</item>
                             </items>
+                            <signal name="changed" handler="on_comboboxtext_new_replication_dialog_port_changed" swapped="no"/>
                             <child internal-child="entry">
                               <object class="GtkEntry" id="comboboxtext-entry2">
-                                <property name="can_focus">False</property>
+                                <property name="can_focus">True</property>
+                                <property name="max_length">5</property>
+                                <property name="width_chars">6</property>
+                                <property name="max_width_chars">5</property>
+                                <property name="caps_lock_warning">False</property>
+                                <property name="input_purpose">digits</property>
                               </object>
                             </child>
                           </object>
@@ -1083,7 +1098,7 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkCheckButton" id="checkbutton5">
+                          <object class="GtkCheckButton" id="checkbutton_new_replication_dialog_secure">
                             <property name="label" translatable="yes">Secure</property>
                             <property name="visible">True</property>
                             <property name="sensitive">False</property>
@@ -1103,13 +1118,14 @@
                   </object>
                 </child>
                 <child type="label">
-                  <object class="GtkCheckButton" id="checkbutton4">
+                  <object class="GtkCheckButton" id="checkbutton_new_replication_dialog_remote">
                     <property name="label" translatable="yes">Remote</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>
                     <property name="xalign">0</property>
                     <property name="draw_indicator">True</property>
+                    <signal name="clicked" handler="on_checkbutton_new_replication_dialog_remote" swapped="no"/>
                   </object>
                 </child>
               </object>
@@ -1137,9 +1153,12 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkEntry" id="entry2">
+                  <object class="GtkEntry" id="entry_new_replication_dialog_target">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
+                    <property name="caps_lock_warning">False</property>
+                    <property name="input_hints">GTK_INPUT_HINT_NO_SPELLCHECK | GTK_INPUT_HINT_NONE</property>
+                    <signal name="changed" handler="on_entry_new_replication_dialog_target_changed" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">True</property>
@@ -1148,7 +1167,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="button2">
+                  <object class="GtkButton" id="button_new_replication_dialog_add_target">
                     <property name="label">gtk-add</property>
                     <property name="visible">True</property>
                     <property name="sensitive">False</property>

@@ -313,7 +313,10 @@ class MainWindow:
             webbrowser.open_new_tab(url)
 
     def on_menuitem_databases_replication_new(self, menu):
-        self.new_single_replication_dialog.run()
+        selected_databases = self.selected_databases
+        if len(selected_databases) == 1:
+            db = selected_databases[0]
+            self.new_single_replication_dialog.run(db.db_name)
 
     def on_menu_databases_show(self, menu):
         connected = self._couchdb is not None
