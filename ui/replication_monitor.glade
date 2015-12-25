@@ -1211,6 +1211,7 @@
                     <property name="rubber_banding">True</property>
                     <property name="activate_on_single_click">True</property>
                     <signal name="row-activated" handler="on_treeview_new_replication_dialog_targets_row_activated" swapped="no"/>
+                    <signal name="select-all" handler="on_treeview_new_replication_dialog_targets_select_all" swapped="no"/>
                     <child internal-child="selection">
                       <object class="GtkTreeSelection" id="treeview-selection5">
                         <property name="mode">multiple</property>
@@ -1250,7 +1251,7 @@
                     <property name="tooltip_text" translatable="yes">Remove the selected targets from the list</property>
                     <property name="use_stock">True</property>
                     <property name="always_show_image">True</property>
-                    <signal name="clicked" handler="on_button_new_replication_dialog_add_delete_clicked" swapped="no"/>
+                    <signal name="clicked" handler="on_button_new_replication_dialog_delete_clicked" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">False</property>

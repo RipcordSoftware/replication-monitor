@@ -1,6 +1,6 @@
 import re
 
-from gi.repository import Gtk
+from gi.repository import Gtk, GObject
 
 
 class NewSingleReplicationDialog:
@@ -8,6 +8,7 @@ class NewSingleReplicationDialog:
     def __init__(self, builder):
         self._win = builder.get_object('dialog_new_replication', target=self, include_children=True)
         self._target_model = Gtk.ListStore(str)
+        self._target_model.connect('row-deleted', self.on_target_model_row_deleted)
         self.treeview_new_replication_dialog_targets.set_model(self._target_model)
 
     def run(self, source_name):
@@ -22,6 +23,10 @@ class NewSingleReplicationDialog:
         if sensitive and self.is_remote_active:
             sensitive = self.is_remote_valid
         self.button_new_replication_dialog_add_target.set_sensitive(sensitive)
+
+    def set_remove_target_button_state(self):
+        selected_row_count = len(self.selected_target_rows[1])
+        self.button_new_replication_dialog_add_delete.set_sensitive(selected_row_count > 0)
 
     def get_new_target(self):
         target = ''
@@ -72,6 +77,7 @@ class NewSingleReplicationDialog:
     def on_dialog_new_replication_show(self, dialog):
         self.entry_new_replication_dialog_target.set_text('')
         self._target_model.clear()
+        self.set_remove_target_button_state()
         pass
 
     def on_checkbutton_new_replication_dialog_remote(self, button):
@@ -96,10 +102,19 @@ class NewSingleReplicationDialog:
         self._target_model.append([new_target])
 
     def on_treeview_new_replication_dialog_targets_row_activated(self, treeview, path, column):
-        self.button_new_replication_dialog_add_delete.set_sensitive(len(self.selected_targets) > 0)
+        self.set_remove_target_button_state()
 
-    def on_button_new_replication_dialog_add_delete_clicked(self, button):
-        print('on_button_new_replication_dialog_add_delete_clicked')
+    def on_button_new_replication_dialog_delete_clicked(self, button):
+        selected_row_paths = self.selected_target_rows[1]
+        for path in reversed(selected_row_paths):
+            itr = self._target_model.get_iter(path)
+            self._target_model.remove(itr)
+
+    def on_target_model_row_deleted(self, path, user_data):
+        GObject.idle_add(lambda: self.set_remove_target_button_state())
+
+    def on_treeview_new_replication_dialog_targets_select_all(self, widget):
+        GObject.idle_add(lambda: self.set_remove_target_button_state())
 
     def on_button_new_replication_dialog_replicate(self, button):
         pass
