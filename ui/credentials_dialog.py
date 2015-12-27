@@ -11,7 +11,9 @@ class CredentialsDialog:
     def __init__(self, builder):
         self._win = builder.get_object('dialog_credentials', target=self, include_children=True)
 
-    def run(self, server_url):
+    def run(self, server_url, username=None, password=None):
+        self.entry_username.set_text(username if username else '')
+        self.entry_password.set_text(password if password else '')
         self.entry_server_url.set_text(server_url)
         result = self._win.run()
         self._win.hide()

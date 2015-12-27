@@ -1,5 +1,4 @@
 import json
-import threading
 from collections import namedtuple
 from http.client import HTTPConnection, HTTPSConnection
 from base64 import b64encode
