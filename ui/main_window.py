@@ -60,16 +60,21 @@ class MainWindow:
         self._auto_update_thread.daemon = True
         self._auto_update_thread.start()
 
+        self.reset_statusbar()
+
         self._win.show_all()
 
     def auto_update_handler(self):
         while not self._auto_update_exit.wait(5):
             if self._couchdb and self._auto_update:
                 try:
+                    GtkHelper.idle(lambda: self.spinner_auto_update.set_visible(True))
                     self.update_replication_tasks()
                     self.update_databases()
                 except Exception as e:
                     self.report_error(e)
+                finally:
+                    GtkHelper.idle(lambda: self.spinner_auto_update.set_visible(False))
 
     def couchdb_request(self, func):
         if self._couchdb:
@@ -87,6 +92,40 @@ class MainWindow:
 
             thread = threading.Thread(target=task)
             thread.start()
+
+    def reset_statusbar(self):
+        self.statusbar.remove_all(0)
+        self.statusbar.push(0, 'Not Connected')
+
+    def update_statusbar(self):
+        def func():
+            try:
+                signature = self._couchdb.get_signature()
+                product = 'CouchDB'
+                if getattr(signature, 'express_pouchdb', None):
+                    product = 'PouchDB'
+                elif getattr(signature, 'avancedb', None):
+                    product = 'AvanceDB'
+                elif getattr(signature, 'cloudant_build', None):
+                    product = 'Cloudant'
+                server = product + ' ' + str(signature.version)
+
+                auth_details = 'Admin Party'
+                session = self._couchdb.get_session()
+                user_ctx = session.userCtx
+                if user_ctx and user_ctx.name:
+                    auth_details = user_ctx.name
+                    roles = ''
+                    for role in user_ctx.roles:
+                        roles += ', ' + role if len(roles) > 0 else role
+                    auth_details += ' [' + roles + ']'
+
+                status = server + ' - ' + auth_details
+                self.statusbar.push(0, status)
+            except:
+                GtkHelper.invoke(lambda: self.reset_statusbar())
+        thread = threading.Thread(target=func)
+        thread.run()
 
     def update_databases(self):
         databases = []
@@ -157,26 +196,58 @@ class MainWindow:
 
         GtkHelper.invoke(func, async=False)
 
-    @staticmethod
-    def new_database_row(db):
-        return ModelMapper(db, [
-                            'db_name',
-                            'doc_count',
-                            lambda i: MainWindow.get_update_sequence(i.update_seq),
-                            lambda i: i.disk_size / 1024 / 1024,
-                            None,
-                            None])
+    def get_couchdb(self):
+        return CouchDB(self.server, self.port, self.secure, self.get_credentials)
 
-    @staticmethod
-    def new_replication_task_row(task):
-        return ModelMapper(task, [
-            'source',
-            'target',
-            None,
-            lambda t: getattr(t, 'progress', None),
-            'continuous',
-            lambda t: time.strftime('%H:%M:%S', time.gmtime(t.started_on)),
-            lambda t: time.strftime('%H:%M:%S', time.gmtime(t.updated_on))])
+    def get_credentials(self):
+        def func():
+            result = None
+            if self.credentials_dialog.run() == Gtk.ResponseType.OK:
+                result = self.credentials_dialog.credentials
+
+            GtkHelper.idle(lambda: self.update_statusbar())
+
+            return result
+
+        return GtkHelper.invoke(func, async=False)
+
+    def report_error(self, err):
+        def func():
+            text = str(err)
+            self.infobar_warnings_message.set_text(text)
+            self.infobar_warnings.show()
+        GtkHelper.invoke(func)
+
+    # region Properties
+    @property
+    def server(self):
+        return self.entry_server.get_text()
+
+    @property
+    def port(self):
+        return self.comboboxtext_port.get_active_text()
+
+    @property
+    def secure(self):
+        secure = self.checkbutton_secure.get_active()
+        return secure or self.port == '443'
+
+    @property
+    def selected_database_rows(self):
+        rows = []
+        (model, path_list) = self.treeview_databases.get_selection().get_selected_rows()
+        if path_list and len(path_list):
+            for path in path_list:
+                row = model[path]
+                db = ModelMapper.get_item_instance(row)
+                rows.append(self.SelectedDatabaseRow(path, db))
+        return rows
+
+    @property
+    def selected_databases(self):
+        rows = self.selected_database_rows
+        return [db for path, db in rows]
+    # endregion
 
     # region Event handlers
     def on_button_connect(self, button):
@@ -184,6 +255,7 @@ class MainWindow:
         self.infobar_warnings.hide()
         self._replication_tasks_model.clear()
         self._database_model.clear()
+        self.reset_statusbar()
 
         try:
             couchdb = self.get_couchdb()
@@ -192,6 +264,7 @@ class MainWindow:
             def request():
                 self.update_databases()
                 self.update_replication_tasks()
+                self.update_statusbar()
 
             self.couchdb_request(request)
         except Exception as e:
@@ -349,54 +422,7 @@ class MainWindow:
         Gtk.main_quit()
     # endregion
 
-    def get_couchdb(self):
-        return CouchDB(self.server, self.port, self.secure, self.get_credentials)
-
-    def get_credentials(self):
-        def func():
-            result = None
-            if self.credentials_dialog.run() == Gtk.ResponseType.OK:
-                result = self.credentials_dialog.credentials
-            return result
-
-        return GtkHelper.invoke(func, async=False)
-
-    def report_error(self, err):
-        def func():
-            text = str(err)
-            self.infobar_warnings_message.set_text(text)
-            self.infobar_warnings.show()
-        GtkHelper.invoke(func)
-
-    @property
-    def server(self):
-        return self.entry_server.get_text()
-
-    @property
-    def port(self):
-        return self.comboboxtext_port.get_active_text()
-
-    @property
-    def secure(self):
-        secure = self.checkbutton_secure.get_active()
-        return secure or self.port == '443'
-
-    @property
-    def selected_database_rows(self):
-        rows = []
-        (model, path_list) = self.treeview_databases.get_selection().get_selected_rows()
-        if path_list and len(path_list):
-            for path in path_list:
-                row = model[path]
-                db = ModelMapper.get_item_instance(row)
-                rows.append(self.SelectedDatabaseRow(path, db))
-        return rows
-
-    @property
-    def selected_databases(self):
-        rows = self.selected_database_rows
-        return [db for path, db in rows]
-
+    # region Static methods
     @staticmethod
     def get_update_sequence(val):
         seq = 0
@@ -411,4 +437,26 @@ class MainWindow:
             seq = val
 
         return seq
+
+    @staticmethod
+    def new_database_row(db):
+        return ModelMapper(db, [
+                            'db_name',
+                            'doc_count',
+                            lambda i: MainWindow.get_update_sequence(i.update_seq),
+                            lambda i: i.disk_size / 1024 / 1024,
+                            None,
+                            None])
+
+    @staticmethod
+    def new_replication_task_row(task):
+        return ModelMapper(task, [
+            'source',
+            'target',
+            None,
+            lambda t: getattr(t, 'progress', None),
+            'continuous',
+            lambda t: time.strftime('%H:%M:%S', time.gmtime(t.started_on)),
+            lambda t: time.strftime('%H:%M:%S', time.gmtime(t.updated_on))])
+# endregion
 

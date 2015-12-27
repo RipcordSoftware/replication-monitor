@@ -78,6 +78,12 @@ class CouchDB:
             setattr(self._thread_local, '_conn', self.new_connection())
         return getattr(self._thread_local, '_conn')
 
+    def get_signature(self):
+        response = self._make_request('/')
+        if response.status != 200 or not response.is_json:
+            raise CouchDBException(response)
+        return response.body
+
     def get_session(self):
         response = self._make_request('/_session')
         if response.status != 200 or not response.is_json:
@@ -126,7 +132,6 @@ class CouchDB:
             job['user_ctx'] = {'name': user_ctx.name, 'roles': user_ctx.roles}
 
         job_json = json.dumps(job)
-        print(job_json)
         response = self._make_request('/_replicator', 'POST', job_json, 'application/json')
         if response.status != 201 or not response.is_json:
             raise CouchDBException(response)
@@ -173,11 +178,21 @@ class CouchDB:
         else:
             response_body = response_body.decode('ascii')
 
-        if response_content_type.find('text/plain') == 0 and len(response_body) > 0 and (response_body[0] == '{' or response_body[0] == '['):
+        if response_content_type.find('text/plain') == 0 and \
+                len(response_body) > 0 and \
+                (response_body[0] == '{' or response_body[0] == '['):
             response_content_type = response_content_type.replace('text/plain', 'application/json')
 
         if response_content_type.find('application/json') == 0:
-            response_body = json.loads(response_body, object_hook=lambda o: namedtuple('Struct', o.keys())(*o.values()))
+            response_body = json.loads(
+                response_body,
+                object_hook=lambda o: namedtuple('Struct', CouchDB._validate_keys(o.keys()))(*o.values()))
 
         return CouchDB.Response(response, response_body, response_content_type)
 
+    @staticmethod
+    def _validate_keys(keys):
+        new_keys = []
+        for key in keys:
+            new_keys.append(key.replace('-', '_'))
+        return new_keys

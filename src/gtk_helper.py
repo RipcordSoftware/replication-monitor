@@ -45,6 +45,10 @@ class GtkHelper:
         return result
 
     @staticmethod
+    def idle(task):
+        GObject.idle_add(task)
+
+    @staticmethod
     def run_dialog(win, message_type, buttons_type, msg):
         dialog = Gtk.MessageDialog(win, 0, message_type, buttons_type, msg)
         response = dialog.run()
