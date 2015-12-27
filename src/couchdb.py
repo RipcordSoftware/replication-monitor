@@ -75,16 +75,11 @@ class CouchDB:
     _signature = None
 
     def __init__(self, host, port, secure, get_credentials=None):
+        self._host = host
+        self._port = port
+        self._secure = secure
         self._get_credentials = get_credentials
-        self.new_connection = lambda: HTTPSConnection(host, port) if secure else HTTPConnection(host, port)
-        self._thread_local = threading.local()
-        setattr(self._thread_local, '_conn', self.new_connection())
-
-    @property
-    def _conn(self):
-        if getattr(self._thread_local, '_conn', None) is None:
-            setattr(self._thread_local, '_conn', self.new_connection())
-        return getattr(self._thread_local, '_conn')
+        self._conn = HTTPSConnection(host, port) if secure else HTTPConnection(host, port)
 
     @property
     def db_type(self):
@@ -97,6 +92,11 @@ class CouchDB:
         elif getattr(signature, 'cloudant_build', None):
             db_type = CouchDB.DatabaseType.Cloudant
         return db_type
+
+    def get_url(self):
+        url = 'https' if self._secure else 'http'
+        url += '://' + self._host + ':' + self._port + '/'
+        return url
 
     def get_signature(self):
         if not self._signature:
@@ -164,10 +164,7 @@ class CouchDB:
         if response.status != 202 or not response.is_json:
             raise CouchDBException(response)
 
-    def _make_request(self, uri, method='GET', body=None, content_type=None, conn=None):
-        if conn is None:
-            conn = self._conn
-
+    def _make_request(self, uri, method='GET', body=None, content_type=None):
         headers = {}
         if self._auth:
             headers['Authorization'] = 'Basic ' + self._auth
@@ -175,22 +172,23 @@ class CouchDB:
         if (method == 'PUT' or method == 'POST') and content_type is not None:
             headers['Content-Type'] = content_type
 
-        conn.request(method, uri, body, headers)
+        self._conn.request(method, uri, body, headers)
 
-        response = conn.getresponse()
+        response = self._conn.getresponse()
         response_body = response.readall()
 
         if response.status == 401 and callable(self._get_credentials) and not self._auth_active:
             try:
                 self._auth_active = True
-                creds = self._get_credentials()
+                server_url = self.get_url()
+                creds = self._get_credentials(server_url)
                 self._auth_active = False
 
                 if creds:
                     auth = creds.username + ':' + creds.password
                     auth = auth.encode()
                     self._auth = b64encode(auth).decode("ascii")
-                    return self._make_request(uri, method, body, content_type, conn)
+                    return self._make_request(uri, method, body, content_type)
             finally:
                 self._auth_active = False
 

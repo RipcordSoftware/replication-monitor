@@ -192,10 +192,10 @@ class MainWindow:
     def get_couchdb(self):
         return CouchDB(self.server, self.port, self.secure, self.get_credentials)
 
-    def get_credentials(self):
+    def get_credentials(self, server_url):
         def func():
             result = None
-            if self.credentials_dialog.run() == Gtk.ResponseType.OK:
+            if self.credentials_dialog.run(server_url) == Gtk.ResponseType.OK:
                 result = self.credentials_dialog.credentials
 
             GtkHelper.idle(lambda: self.update_statusbar())
