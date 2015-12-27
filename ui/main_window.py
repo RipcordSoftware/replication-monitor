@@ -312,6 +312,15 @@ class MainWindow:
             backup_database = True
             source_name = selected_databases[0].db_name
             target_name = 'backup$' + source_name
+
+            if self._couchdb.db_type is CouchDB.DatabaseType.Cloudant:
+                headers = {'Authorization': 'Basic ' + self._couchdb.auth}
+                source = {'url': self._couchdb.get_url() + source_name, 'headers': headers}
+                target = {'url': self._couchdb.get_url() + target_name, 'headers': headers}
+            else:
+                source = source_name
+                target = target_name
+
             try:
                 self._couchdb.get_database(target_name)
                 response = GtkHelper.run_dialog(self._win, Gtk.MessageType.QUESTION,
@@ -325,7 +334,7 @@ class MainWindow:
                 pass
 
             if backup_database:
-                self.couchdb_request(lambda: self._couchdb.create_replication(source_name, target_name, create_target=True))
+                self.couchdb_request(lambda: self._couchdb.create_replication(source, target, create_target=True))
 
     def on_menu_databases_restore(self, menu):
         selected_databases = self.selected_databases
@@ -333,6 +342,15 @@ class MainWindow:
             restore_database = True
             source_name = selected_databases[0].db_name
             target_name = source_name[7::]
+
+            if self._couchdb.db_type is CouchDB.DatabaseType.Cloudant:
+                headers = {'Authorization': 'Basic ' + self._couchdb.auth}
+                source = {'url': self._couchdb.get_url() + source_name, 'headers': headers}
+                target = {'url': self._couchdb.get_url() + target_name, 'headers': headers}
+            else:
+                source = source_name
+                target = target_name
+
             try:
                 self._couchdb.get_database(target_name)
                 response = GtkHelper.run_dialog(self._win, Gtk.MessageType.QUESTION,
@@ -346,7 +364,7 @@ class MainWindow:
                 pass
 
             if restore_database:
-                self.couchdb_request(lambda: self._couchdb.create_replication(source_name, target_name, create_target=True))
+                self.couchdb_request(lambda: self._couchdb.create_replication(source, target, create_target=True))
 
     def on_menuitem_databases_compact(self, menu):
         selected_databases = self.selected_databases

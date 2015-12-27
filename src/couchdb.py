@@ -93,6 +93,10 @@ class CouchDB:
             db_type = CouchDB.DatabaseType.Cloudant
         return db_type
 
+    @property
+    def auth(self):
+        return self._auth
+
     def get_url(self):
         url = 'https' if self._secure else 'http'
         url += '://' + self._host + ':' + self._port + '/'
