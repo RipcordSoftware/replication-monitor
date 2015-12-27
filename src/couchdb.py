@@ -3,6 +3,7 @@ import threading
 from collections import namedtuple
 from http.client import HTTPConnection, HTTPSConnection
 from base64 import b64encode
+from enum import Enum
 
 
 class CouchDBException(Exception):
@@ -37,6 +38,12 @@ class CouchDBException(Exception):
 
 
 class CouchDB:
+    class DatabaseType(Enum):
+        CouchDB = 1
+        AvanceDB = 2
+        PouchDB = 3
+        Cloudant = 4
+
     class Response:
         def __init__(self, response, body=None, content_type=None):
             self._response = response
@@ -65,6 +72,7 @@ class CouchDB:
 
     _auth = None
     _auth_active = False
+    _signature = None
 
     def __init__(self, host, port, secure, get_credentials=None):
         self._get_credentials = get_credentials
@@ -78,11 +86,25 @@ class CouchDB:
             setattr(self._thread_local, '_conn', self.new_connection())
         return getattr(self._thread_local, '_conn')
 
+    @property
+    def db_type(self):
+        db_type = CouchDB.DatabaseType.CouchDB
+        signature = self.get_signature()
+        if getattr(signature, 'express_pouchdb', None):
+            db_type = CouchDB.DatabaseType.PouchDB
+        elif getattr(signature, 'avancedb', None):
+            db_type = CouchDB.DatabaseType.AvanceDB
+        elif getattr(signature, 'cloudant_build', None):
+            db_type = CouchDB.DatabaseType.Cloudant
+        return db_type
+
     def get_signature(self):
-        response = self._make_request('/')
-        if response.status != 200 or not response.is_json:
-            raise CouchDBException(response)
-        return response.body
+        if not self._signature:
+            response = self._make_request('/')
+            if response.status != 200 or not response.is_json:
+                raise CouchDBException(response)
+            self._signature = response.body
+        return self._signature
 
     def get_session(self):
         response = self._make_request('/_session')

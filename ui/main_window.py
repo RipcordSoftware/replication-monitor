@@ -101,14 +101,7 @@ class MainWindow:
         def func():
             try:
                 signature = self._couchdb.get_signature()
-                product = 'CouchDB'
-                if getattr(signature, 'express_pouchdb', None):
-                    product = 'PouchDB'
-                elif getattr(signature, 'avancedb', None):
-                    product = 'AvanceDB'
-                elif getattr(signature, 'cloudant_build', None):
-                    product = 'Cloudant'
-                server = product + ' ' + str(signature.version)
+                server = self._couchdb.db_type.name + ' ' + str(signature.version)
 
                 auth_details = 'Admin Party'
                 session = self._couchdb.get_session()
@@ -122,7 +115,7 @@ class MainWindow:
 
                 status = server + ' - ' + auth_details
                 self.statusbar.push(0, status)
-            except:
+            except Exception as e:
                 GtkHelper.invoke(lambda: self.reset_statusbar())
         thread = threading.Thread(target=func)
         thread.run()
