@@ -4,9 +4,9 @@ import webbrowser
 import re
 import collections
 
-from gi.repository import Gtk, Gdk, GObject
+from gi.repository import Gtk, Gdk
 
-from src.couchdb import CouchDB, CouchDBException
+from src.couchdb import CouchDB
 from src.model_mapper import ModelMapper
 from src.gtk_helper import GtkHelper
 from src.keyring import Keyring
@@ -14,6 +14,7 @@ from ui.credentials_dialog import CredentialsDialog
 from ui.new_database_dialog import NewDatabaseDialog
 from ui.delete_databases_dialog import DeleteDatabasesDialog
 from ui.new_single_replication_dialog import NewSingleReplicationDialog
+from ui.new_replications_window import NewReplicationsWindow
 
 
 class MainWindow:
@@ -34,6 +35,7 @@ class MainWindow:
         self.new_database_dialog = NewDatabaseDialog(builder)
         self.new_single_replication_dialog = NewSingleReplicationDialog(builder)
         self.delete_databases_dialog = DeleteDatabasesDialog(builder)
+        self.new_replications_window = NewReplicationsWindow(builder, self.on_hide_new_replication_window)
 
         self._database_model = Gtk.ListStore(str, int, int, int, str, str, object)
         self.treeview_databases.set_model(self._database_model)
@@ -210,6 +212,11 @@ class MainWindow:
             return result
 
         return GtkHelper.invoke(func, async=False)
+
+    def close(self):
+        self._auto_update_exit.set()
+        self._auto_update_thread.join()
+        Gtk.main_quit()
 
     def report_error(self, err):
         def func():
@@ -407,7 +414,9 @@ class MainWindow:
         selected_databases = self.selected_databases
         if len(selected_databases) == 1:
             db = selected_databases[0]
-            self.new_single_replication_dialog.run(db.db_name)
+            result = self.new_single_replication_dialog.run(db.db_name)
+            if result == Gtk.ResponseType.OK:
+                self.checkmenuitem_view_new_replication_window.set_active(True)
 
     def on_menu_databases_show(self, menu):
         connected = self._couchdb is not None
@@ -435,9 +444,20 @@ class MainWindow:
         self._auto_update = self.checkbuttonAutoUpdate.get_active()
 
     def on_delete(self, widget, data):
-        self._auto_update_exit.set()
-        self._auto_update_thread.join()
-        Gtk.main_quit()
+        self.close()
+
+    def on_checkmenuitem_view_new_replication_window_toggled(self, menu):
+        active = self.checkmenuitem_view_new_replication_window.get_active()
+        if active:
+            self.new_replications_window.show()
+        else:
+            self.new_replications_window.hide()
+
+    def on_hide_new_replication_window(self):
+        self.checkmenuitem_view_new_replication_window.set_active(False)
+
+    def on_imagemenuitem_file_quit(self, menu):
+        self.close()
     # endregion
 
     # region Static methods
