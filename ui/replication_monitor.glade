@@ -1023,7 +1023,7 @@
                 <property name="sensitive">False</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <signal name="activate" handler="on_button_new_replication_dialog_replicate" swapped="no"/>
+                <signal name="clicked" handler="on_button_new_replication_dialog_replicate" swapped="no"/>
               </object>
               <packing>
                 <property name="expand">True</property>
@@ -1375,7 +1375,7 @@
                             <property name="spacing">12</property>
                             <property name="homogeneous">True</property>
                             <child>
-                              <object class="GtkCheckButton" id="checkbutton1">
+                              <object class="GtkCheckButton" id="checkbutton_new_replication_dialog_continuous">
                                 <property name="label" translatable="yes">Continuous</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
@@ -1391,7 +1391,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="checkbutton2">
+                              <object class="GtkCheckButton" id="checkbutton_new_replication_dialog_create">
                                 <property name="label" translatable="yes">Create</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
@@ -1408,7 +1408,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="checkbutton3">
+                              <object class="GtkCheckButton" id="checkbutton_new_replication_dialog_drop_first">
                                 <property name="label" translatable="yes">Drop First</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>

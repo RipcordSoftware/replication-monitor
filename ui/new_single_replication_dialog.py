@@ -1,17 +1,28 @@
-import re
+from enum import Enum
+from collections import namedtuple
 
-from gi.repository import Gtk, GObject
+from gi.repository import Gtk
 
+from src.gtk_helper import GtkHelper
 
 class NewSingleReplicationDialog:
+    class ReplType(Enum):
+        All = 1
+        Docs = 2
+        Designs = 3
+
+    Replication = namedtuple('Replication', 'source target continuous create drop_first repl_type')
 
     def __init__(self, builder):
         self._win = builder.get_object('dialog_new_replication', target=self, include_children=True)
         self._target_model = Gtk.ListStore(str)
+        self._target_model.connect('row-inserted', self.on_target_model_row_added)
         self._target_model.connect('row-deleted', self.on_target_model_row_deleted)
         self.treeview_new_replication_dialog_targets.set_model(self._target_model)
+        self._replications = None
 
     def run(self, source_name):
+        self._replications = []
         self.entry_new_replication_dialog_source.set_text(source_name)
         result = self._win.run()
         self._win.hide()
@@ -27,6 +38,10 @@ class NewSingleReplicationDialog:
     def set_remove_target_button_state(self):
         selected_row_count = len(self.selected_target_rows[1])
         self.button_new_replication_dialog_add_delete.set_sensitive(selected_row_count > 0)
+
+    def set_replicate_button_state(self):
+        count = len(self._target_model)
+        self.button_new_replication_dialog_replicate.set_sensitive(count > 0)
 
     def get_new_target(self):
         target = ''
@@ -71,6 +86,35 @@ class NewSingleReplicationDialog:
                 row = model[path]
                 targets.append(row[0])
         return targets
+
+    @property
+    def replications(self):
+        return self._replications
+
+    @property
+    def source(self):
+        return self.entry_new_replication_dialog_source.get_text()
+
+    @property
+    def drop_first(self):
+        return self.checkbutton_new_replication_dialog_drop_first.get_active()
+
+    @property
+    def create(self):
+        return self.checkbutton_new_replication_dialog_create.get_active()
+
+    @property
+    def continuous(self):
+        return self.checkbutton_new_replication_dialog_continuous.get_active()
+
+    @property
+    def repl_type(self):
+        if self.radiobutton_new_replication_dialog_docs_and_designs.get_active():
+            return NewSingleReplicationDialog.ReplType.All
+        elif self.radiobutton_new_replication_dialog_only_docs.get_active():
+            return NewSingleReplicationDialog.ReplType.Docs
+        elif self.radiobutton_new_replication_dialog_only_designs.get_active():
+            return NewSingleReplicationDialog.ReplType.Designs
     # endregion
 
     # region Event handlers
@@ -110,14 +154,29 @@ class NewSingleReplicationDialog:
             itr = self._target_model.get_iter(path)
             self._target_model.remove(itr)
 
+    def on_target_model_row_added(self, mode, path, user_data):
+        GtkHelper.idle(self.set_replicate_button_state)
+
     def on_target_model_row_deleted(self, path, user_data):
-        GObject.idle_add(lambda: self.set_remove_target_button_state())
+        def func():
+            self.set_remove_target_button_state()
+            self.set_replicate_button_state()
+        GtkHelper.idle(func)
 
     def on_treeview_new_replication_dialog_targets_select_all(self, widget):
-        GObject.idle_add(lambda: self.set_remove_target_button_state())
+        GtkHelper.idle(self.set_remove_target_button_state)
 
     def on_button_new_replication_dialog_replicate(self, button):
-        pass
+        self._replications = []
+
+        for row in self._target_model:
+            target = row[0]
+            replication = NewSingleReplicationDialog.Replication(
+                source=self.source, target=target, continuous=self.continuous,
+                create=self.create, drop_first=self.drop_first, repl_type=self.repl_type)
+            self._replications.append(replication)
+
+        self._win.response(Gtk.ResponseType.OK)
 
     def on_button_new_replication_dialog_cancel(self, button):
         self._win.response(Gtk.ResponseType.CANCEL)
