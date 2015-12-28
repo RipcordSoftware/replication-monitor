@@ -42,3 +42,7 @@ class CredentialsDialog:
     @property
     def credentials(self):
         return self.Credentials(self.username, self.password)
+
+    @property
+    def save_credentials(self):
+        return self.checkbutton_add_to_keyring.get_active()

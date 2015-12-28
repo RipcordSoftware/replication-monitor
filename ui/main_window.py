@@ -3,14 +3,13 @@ import threading
 import webbrowser
 import re
 import collections
-import keyring
-import json
 
 from gi.repository import Gtk, Gdk, GObject
 
 from src.couchdb import CouchDB, CouchDBException
 from src.model_mapper import ModelMapper
 from src.gtk_helper import GtkHelper
+from src.keyring import Keyring
 from ui.credentials_dialog import CredentialsDialog
 from ui.new_database_dialog import NewDatabaseDialog
 from ui.delete_databases_dialog import DeleteDatabasesDialog
@@ -196,20 +195,15 @@ class MainWindow:
 
     def get_credentials(self, server_url):
         def func():
-            username = None
-            password = None
-            service = 'avancedb-replication-monitor'
-            json_auth = keyring.get_password(service, server_url)
-            if json_auth:
-                auth = json.loads(json_auth)
-                username = auth['username']
-                password = auth['password']
+            credentials = Keyring.get_auth(server_url)
+            username = credentials.username if credentials else None
+            password = credentials.password if credentials else None
 
             result = None
             if self.credentials_dialog.run(server_url, username, password) == Gtk.ResponseType.OK:
                 result = self.credentials_dialog.credentials
-                json_auth = json.dumps({'username': result.username, 'password': result.password})
-                keyring.set_password(service, server_url, json_auth)
+                if self.credentials_dialog.save_credentials:
+                    Keyring.set_auth(server_url, result.username, result.password)
 
             GtkHelper.idle(lambda: self.update_statusbar())
 
