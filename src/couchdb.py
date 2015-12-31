@@ -75,7 +75,7 @@ class CouchDB:
 
     def __init__(self, host, port, secure, get_credentials=None):
         self._host = host
-        self._port = port
+        self._port = int(port)
         self._secure = secure
         self._get_credentials = get_credentials
         self._conn = HTTPSConnection(host, port) if secure else HTTPConnection(host, port)
@@ -98,8 +98,10 @@ class CouchDB:
 
     def get_url(self):
         url = 'https' if self._secure else 'http'
-        url += '://' + self._host + ':' + self._port + '/'
-        return url
+        url += '://' + self._host
+        if (self._secure and self._port != 443) or (not self._secure and self._port != 80):
+            url += ':' + str(self._port)
+        return url + '/'
 
     def get_signature(self):
         if not self._signature:

@@ -1,18 +1,10 @@
-from enum import Enum
-from collections import namedtuple
-
 from gi.repository import Gtk
 
 from src.gtk_helper import GtkHelper
+from src.replication import Replication
+
 
 class NewSingleReplicationDialog:
-    class ReplType(Enum):
-        All = 1
-        Docs = 2
-        Designs = 3
-
-    Replication = namedtuple('Replication', 'source target continuous create drop_first repl_type')
-
     def __init__(self, builder):
         self._win = builder.get_object('dialog_new_replication', target=self, include_children=True)
         self._target_model = Gtk.ListStore(str)
@@ -110,11 +102,11 @@ class NewSingleReplicationDialog:
     @property
     def repl_type(self):
         if self.radiobutton_new_replication_dialog_docs_and_designs.get_active():
-            return NewSingleReplicationDialog.ReplType.All
+            return Replication.ReplType.All
         elif self.radiobutton_new_replication_dialog_only_docs.get_active():
-            return NewSingleReplicationDialog.ReplType.Docs
+            return Replication.ReplType.Docs
         elif self.radiobutton_new_replication_dialog_only_designs.get_active():
-            return NewSingleReplicationDialog.ReplType.Designs
+            return Replication.ReplType.Designs
     # endregion
 
     # region Event handlers
@@ -171,7 +163,7 @@ class NewSingleReplicationDialog:
 
         for row in self._target_model:
             target = row[0]
-            replication = NewSingleReplicationDialog.Replication(
+            replication = Replication(
                 source=self.source, target=target, continuous=self.continuous,
                 create=self.create, drop_first=self.drop_first, repl_type=self.repl_type)
             self._replications.append(replication)

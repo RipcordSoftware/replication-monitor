@@ -10,6 +10,7 @@ from src.couchdb import CouchDB
 from src.model_mapper import ModelMapper
 from src.gtk_helper import GtkHelper
 from src.keyring import Keyring
+from src.replication import Replication
 from ui.credentials_dialog import CredentialsDialog
 from ui.new_database_dialog import NewDatabaseDialog
 from ui.delete_databases_dialog import DeleteDatabasesDialog
@@ -327,14 +328,6 @@ class MainWindow:
             source_name = selected_databases[0].db_name
             target_name = 'backup$' + source_name
 
-            if self._couchdb.db_type is CouchDB.DatabaseType.Cloudant:
-                headers = {'Authorization': 'Basic ' + self._couchdb.auth}
-                source = {'url': self._couchdb.get_url() + source_name, 'headers': headers}
-                target = {'url': self._couchdb.get_url() + target_name, 'headers': headers}
-            else:
-                source = source_name
-                target = target_name
-
             try:
                 self._couchdb.get_database(target_name)
                 response = GtkHelper.run_dialog(self._win, Gtk.MessageType.QUESTION,
@@ -342,13 +335,12 @@ class MainWindow:
                                                 "Target database already exists, continue?")
 
                 backup_database = response is Gtk.ResponseType.YES
-                if backup_database:
-                    self._couchdb.delete_database(target_name)
-            except Exception as e:
+            except:
                 pass
 
             if backup_database:
-                self.couchdb_request(lambda: self._couchdb.create_replication(source, target, create_target=True))
+                task = Replication(source_name, target_name, drop_first=True, create=True)
+                self.couchdb_request(lambda: task.replicate(self._couchdb))
 
     def on_menu_databases_restore(self, menu):
         selected_databases = self.selected_databases
@@ -357,14 +349,6 @@ class MainWindow:
             source_name = selected_databases[0].db_name
             target_name = source_name[7::]
 
-            if self._couchdb.db_type is CouchDB.DatabaseType.Cloudant:
-                headers = {'Authorization': 'Basic ' + self._couchdb.auth}
-                source = {'url': self._couchdb.get_url() + source_name, 'headers': headers}
-                target = {'url': self._couchdb.get_url() + target_name, 'headers': headers}
-            else:
-                source = source_name
-                target = target_name
-
             try:
                 self._couchdb.get_database(target_name)
                 response = GtkHelper.run_dialog(self._win, Gtk.MessageType.QUESTION,
@@ -372,13 +356,12 @@ class MainWindow:
                                                 "Target database already exists, continue?")
 
                 restore_database = response is Gtk.ResponseType.YES
-                if restore_database:
-                    self._couchdb.delete_database(target_name)
-            except Exception as e:
+            except:
                 pass
 
             if restore_database:
-                self.couchdb_request(lambda: self._couchdb.create_replication(source, target, create_target=True))
+                task = Replication(source_name, target_name, drop_first=True, create=True)
+                self.couchdb_request(lambda: task.replicate(self._couchdb))
 
     def on_menuitem_databases_compact(self, menu):
         selected_databases = self.selected_databases
@@ -417,6 +400,9 @@ class MainWindow:
             result = self.new_single_replication_dialog.run(db.db_name)
             if result == Gtk.ResponseType.OK:
                 self.checkmenuitem_view_new_replication_window.set_active(True)
+
+                for replication in self.new_single_replication_dialog.replications:
+                    replication.replicate(self._couchdb)
 
     def on_menu_databases_show(self, menu):
         connected = self._couchdb is not None
