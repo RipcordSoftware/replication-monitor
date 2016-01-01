@@ -73,8 +73,9 @@ class MainWindow:
             if self._couchdb and self._auto_update:
                 try:
                     GtkHelper.idle(lambda: self.spinner_auto_update.set_visible(True))
-                    self.update_replication_tasks()
-                    self.update_databases()
+                    with self._couchdb.clone() as couchdb:
+                        self.update_replication_tasks(couchdb)
+                        self.update_databases(couchdb)
                 except Exception as e:
                     self.report_error(e)
                 finally:
@@ -104,30 +105,33 @@ class MainWindow:
     def update_statusbar(self):
         def func():
             try:
-                signature = self._couchdb.get_signature()
-                server = self._couchdb.db_type.name + ' ' + str(signature.version)
+                with self._couchdb.clone() as couchdb:
+                    signature = couchdb.get_signature()
+                    server = couchdb.db_type.name + ' ' + str(signature.version)
 
-                auth_details = 'Admin Party'
-                session = self._couchdb.get_session()
-                user_ctx = session.userCtx
-                if user_ctx and user_ctx.name:
-                    auth_details = user_ctx.name
-                    roles = ''
-                    for role in user_ctx.roles:
-                        roles += ', ' + role if len(roles) > 0 else role
-                    auth_details += ' [' + roles + ']'
+                    auth_details = 'Admin Party'
+                    session = couchdb.get_session()
+                    user_ctx = session.userCtx
+                    if user_ctx and user_ctx.name:
+                        auth_details = user_ctx.name
+                        roles = ''
+                        for role in user_ctx.roles:
+                            roles += ', ' + role if len(roles) > 0 else role
+                        auth_details += ' [' + roles + ']'
 
-                status = server + ' - ' + auth_details
-                self.statusbar.push(0, status)
+                    status = server + ' - ' + auth_details
+                    self.statusbar.push(0, status)
             except Exception as e:
-                GtkHelper.invoke(lambda: self.reset_statusbar())
+                GtkHelper.invoke(self.reset_statusbar)
         thread = threading.Thread(target=func)
         thread.run()
 
-    def update_databases(self):
+    def update_databases(self, couchdb=None):
+        couchdb = couchdb if couchdb else self._couchdb
+
         databases = []
-        for name in self._couchdb.get_databases():
-            db = self._couchdb.get_database(name)
+        for name in couchdb.get_databases():
+            db = couchdb.get_database(name)
             databases.append(db)
 
         def func():
@@ -160,8 +164,10 @@ class MainWindow:
 
         GtkHelper.invoke(func, async=False)
 
-    def update_replication_tasks(self):
-        tasks = self._couchdb.get_active_tasks('replication')
+    def update_replication_tasks(self, couchdb=None):
+        couchdb = couchdb if couchdb else self._couchdb
+
+        tasks = couchdb.get_active_tasks('replication')
 
         def func():
             old_tasks = {}
@@ -184,7 +190,7 @@ class MainWindow:
                     new_tasks.append(row)
 
             deleted_replication_task_paths = [path for path in old_tasks.values()]
-            for path in reversed(deleted_replication_task_paths):
+            for path in sorted(deleted_replication_task_paths, reverse=True):
                 itr = model.get_iter(path)
                 model.remove(itr)
 
@@ -208,7 +214,7 @@ class MainWindow:
                 if self.credentials_dialog.save_credentials:
                     Keyring.set_auth(server_url, result.username, result.password)
 
-            GtkHelper.idle(lambda: self.update_statusbar())
+            GtkHelper.idle(self.update_statusbar)
 
             return result
 
@@ -465,12 +471,12 @@ class MainWindow:
     @staticmethod
     def new_database_row(db):
         return ModelMapper(db, [
-                            'db_name',
-                            'doc_count',
-                            lambda i: MainWindow.get_update_sequence(i.update_seq),
-                            lambda i: i.disk_size / 1024 / 1024,
-                            None,
-                            None])
+            'db_name',
+            'doc_count',
+            lambda i: MainWindow.get_update_sequence(i.update_seq),
+            lambda i: i.disk_size / 1024 / 1024,
+            None,
+            None])
 
     @staticmethod
     def new_replication_task_row(task):

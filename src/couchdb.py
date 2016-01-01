@@ -69,16 +69,30 @@ class CouchDB:
         def is_json(self):
             return self._content_type.find('application/json') == 0
 
-    _auth = None
-    _auth_active = False
-    _signature = None
-
-    def __init__(self, host, port, secure, get_credentials=None):
+    def __init__(self, host, port, secure, get_credentials=None, auth=None, signature=None):
         self._host = host
         self._port = int(port)
         self._secure = secure
         self._get_credentials = get_credentials
         self._conn = HTTPSConnection(host, port) if secure else HTTPConnection(host, port)
+        self._auth = auth
+        self._auth_active = False
+        self._signature = signature
+
+    def clone(self):
+        return CouchDB(self._host, self._port, self._secure, get_credentials=self._get_credentials,
+                       auth=self._auth, signature=self._signature)
+
+    def close(self):
+        if self._conn:
+            self._conn.close()
+            self._conn = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     @property
     def db_type(self):
@@ -95,6 +109,10 @@ class CouchDB:
     @property
     def auth(self):
         return self._auth
+
+    @property
+    def get_credentials_callback(self):
+        return self._get_credentials
 
     def get_url(self):
         url = 'https' if self._secure else 'http'
