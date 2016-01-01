@@ -39,7 +39,10 @@ class NewSingleReplicationDialog:
         target = ''
         if self.is_remote_active:
             target = 'https' if self.is_remote_port_secure else 'http'
-            target += '://' + self.entry_new_replication_dialog_server.get_text() + ':' + self.remote_port + '/'
+            target += '://' + self.entry_new_replication_dialog_server.get_text()
+            if (self.is_remote_port_secure and self.remote_port != '443') or (not self.is_remote_port_secure and self.remote_port != '80'):
+                target += ':' + self.remote_port + '/'
+            target += '/'
 
         target += self.entry_new_replication_dialog_target.get_text()
         return target
