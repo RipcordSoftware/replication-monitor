@@ -16,6 +16,7 @@ from ui.credentials_dialog import CredentialsDialog
 from ui.new_database_dialog import NewDatabaseDialog
 from ui.delete_databases_dialog import DeleteDatabasesDialog
 from ui.new_single_replication_dialog import NewSingleReplicationDialog
+from ui.new_multiple_replications_dialog import NewMultipleReplicationDialog
 from ui.new_replications_window import NewReplicationsWindow
 
 
@@ -36,6 +37,7 @@ class MainWindow:
         self.credentials_dialog = CredentialsDialog(builder)
         self.new_database_dialog = NewDatabaseDialog(builder)
         self.new_single_replication_dialog = NewSingleReplicationDialog(builder)
+        self.new_multiple_replication_dialog = NewMultipleReplicationDialog(builder)
         self.delete_databases_dialog = DeleteDatabasesDialog(builder)
         self._new_replications_window = NewReplicationsWindow(builder, self.on_hide_new_replication_window)
 
@@ -409,15 +411,25 @@ class MainWindow:
             webbrowser.open_new_tab(url)
 
     def on_menuitem_databases_replication_new(self, menu):
+        replications = None
         selected_databases = self.selected_databases
-        if len(selected_databases) == 1:
+        selected_count = len(selected_databases)
+
+        if selected_count == 1:
             db = selected_databases[0]
             result = self.new_single_replication_dialog.run(self._couchdb, db.db_name)
             if result == Gtk.ResponseType.OK:
-                self.checkmenuitem_view_new_replication_window.set_active(True)
+                replications = self.new_single_replication_dialog.replications
+        elif selected_count > 1:
+            source_names = [db.db_name for db in selected_databases]
+            result = self.new_multiple_replication_dialog.run(self._couchdb, source_names)
+            if result == Gtk.ResponseType.OK:
+                replications = self.new_multiple_replication_dialog.replications
 
-                for repl in self.new_single_replication_dialog.replications:
-                    self.queue_replication(repl)
+        if replications:
+            self.checkmenuitem_view_new_replication_window.set_active(True)
+            for repl in replications:
+                self.queue_replication(repl)
 
     def on_menu_databases_show(self, menu):
         connected = self._couchdb is not None
@@ -436,7 +448,7 @@ class MainWindow:
         self.menuitem_databases_browse_alldocs.set_sensitive(single_row)
         self.menuitem_databases_delete.set_sensitive(single_row or multiple_rows)
         self.menuitem_databases_compact.set_sensitive(single_row)
-        self.menuitem_databases_replication_new.set_sensitive(single_row)
+        self.menuitem_databases_replication_new.set_sensitive(single_row or multiple_rows)
 
     def on_menu_databases_realize(self, menu):
         self.on_menu_databases_show(menu)

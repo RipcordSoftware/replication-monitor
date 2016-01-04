@@ -57,9 +57,10 @@ class Replication:
         target_name = self._target
 
         if self._couchdb.db_type is CouchDB.DatabaseType.Cloudant and self._couchdb.auth:
-            headers = {'Authorization': 'Basic ' + self._couchdb.auth}
-            source = {'url': self._couchdb.get_url() + source_name, 'headers': headers}
-            target = {'url': self._couchdb.get_url() + target_name, 'headers': headers}
+            url = self._couchdb.get_url()
+            url = url.replace('://', '://' + self._couchdb.auth.url_auth + '@')
+            source = url + source_name
+            target = url + target_name
         else:
             source = source_name
             target = target_name
@@ -82,7 +83,6 @@ class Replication:
 
         if source_is_remote:
             source_couchdb = self._get_couchdb_from_url(source, self._couchdb.get_credentials_callback)
-            source_name = self._get_database_from_url(source)
         else:
             source_couchdb = self._couchdb
 
@@ -93,16 +93,14 @@ class Replication:
             target_couchdb = self._couchdb
 
         # asking for the replicator database will force the user to give the right auth credentials
-        source_couchdb.get_database('_replicator')
-        target_couchdb.get_database('_replicator')
+        source_couchdb.get_docs('_replicator', limit=0)
+        target_couchdb.get_docs('_replicator', limit=0)
 
         if source_is_remote and source_couchdb.auth:
-            headers = {'Authorization': 'Basic ' + source_couchdb.auth}
-            source = {'url': source_couchdb.get_url() + source_name, 'headers': headers}
+            source = source.replace('://', '://' + source_couchdb.auth.url_auth + '@')
 
         if target_is_remote and target_couchdb.auth:
-            headers = {'Authorization': 'Basic ' + target_couchdb.auth}
-            target = {'url': target_couchdb.get_url() + target_name, 'headers': headers}
+            target = target.replace('://', '://' + target_couchdb.auth.url_auth + '@')
 
         if self._drop_first:
             try:

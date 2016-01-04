@@ -2,6 +2,7 @@ import json
 from collections import namedtuple
 from http.client import HTTPConnection, HTTPSConnection
 from base64 import b64encode
+from urllib.parse import quote_plus
 from enum import Enum
 
 
@@ -37,6 +38,29 @@ class CouchDBException(Exception):
 
 
 class CouchDB:
+    class _Authentication:
+        def __init__(self, username, password):
+            self._username = username
+            self._password = password
+
+        @property
+        def username(self):
+            return self._username
+
+        @property
+        def password(self):
+            return self._password
+
+        @property
+        def basic_auth(self):
+            auth = self._username + ':' + self._password
+            auth = auth.encode()
+            return b64encode(auth).decode("ascii")
+
+        @property
+        def url_auth(self):
+            return quote_plus(self._username) + ':' + quote_plus(self._password)
+
     class DatabaseType(Enum):
         CouchDB = 1
         AvanceDB = 2
@@ -157,6 +181,13 @@ class CouchDB:
             raise CouchDBException(response)
         return response.body
 
+    def get_docs(self, name, limit=10):
+        url = '/' + name + '/_all_docs?limit=' + str(limit)
+        response = self._make_request(url)
+        if response.status != 200 or not response.is_json:
+            raise CouchDBException(response)
+        return response.body
+
     def get_active_tasks(self, task_type=None):
         response = self._make_request('/_active_tasks')
         if response.status != 200 or not response.is_json:
@@ -190,7 +221,7 @@ class CouchDB:
     def _make_request(self, uri, method='GET', body=None, content_type=None):
         headers = {}
         if self._auth:
-            headers['Authorization'] = 'Basic ' + self._auth
+            headers['Authorization'] = 'Basic ' + self._auth.basic_auth
 
         if (method == 'PUT' or method == 'POST') and content_type is not None:
             headers['Content-Type'] = content_type
@@ -200,7 +231,8 @@ class CouchDB:
         response = self._conn.getresponse()
         response_body = response.readall()
 
-        if response.status == 401 and callable(self._get_credentials) and not self._auth_active:
+        if (response.status == 401 or response.status == 403) and \
+                callable(self._get_credentials) and not self._auth_active:
             try:
                 self._auth_active = True
                 server_url = self.get_url()
@@ -208,9 +240,7 @@ class CouchDB:
                 self._auth_active = False
 
                 if creds:
-                    auth = creds.username + ':' + creds.password
-                    auth = auth.encode()
-                    self._auth = b64encode(auth).decode("ascii")
+                    self._auth = self._Authentication(creds.username, creds.password)
                     return self._make_request(uri, method, body, content_type)
             finally:
                 self._auth_active = False

@@ -31,7 +31,7 @@ class NewSingleReplicationDialog:
 
     def set_remove_target_button_state(self):
         selected_row_count = len(self.selected_target_rows[1])
-        self.button_new_replication_dialog_add_delete.set_sensitive(selected_row_count > 0)
+        self.button_new_replication_dialog_delete.set_sensitive(selected_row_count > 0)
 
     def set_replicate_button_state(self):
         count = len(self._target_model)
@@ -44,7 +44,8 @@ class NewSingleReplicationDialog:
             target += '://' + self.entry_new_replication_dialog_server.get_text()
             if (self.is_remote_port_secure and self.remote_port != '443') or (not self.is_remote_port_secure and self.remote_port != '80'):
                 target += ':' + self.remote_port + '/'
-            target += '/'
+            else:
+                target += '/'
 
         target += self.entry_new_replication_dialog_target.get_text()
         return target
@@ -119,7 +120,6 @@ class NewSingleReplicationDialog:
         self.entry_new_replication_dialog_target.set_text('')
         self._target_model.clear()
         self.set_remove_target_button_state()
-        pass
 
     def on_checkbutton_new_replication_dialog_remote(self, button):
         active = self.is_remote_active
