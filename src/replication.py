@@ -10,7 +10,8 @@ class Replication:
         Docs = 2
         Designs = 3
 
-    def __init__(self, source, target, continuous=False, create=False, drop_first=False, repl_type=ReplType.All):
+    def __init__(self, couchdb, source, target, continuous=False, create=False, drop_first=False, repl_type=ReplType.All):
+        self._couchdb = couchdb
         self._source = source
         self._target = target
         self._continuous = continuous
@@ -42,54 +43,54 @@ class Replication:
     def repl_type(self):
         return self._repl_type
 
-    def replicate(self, couchdb):
+    def replicate(self):
         # asking for the replicator database will force the user to give the right auth credentials
-        couchdb.get_database('_replicator')
+        self._couchdb.get_database('_replicator')
 
         if Replication._is_local(self._source) and Replication._is_local(self._target):
-            return self._replicate_local(couchdb)
+            return self._replicate_local()
         else:
-            return self._replicate_remote(couchdb)
+            return self._replicate_remote()
 
-    def _replicate_local(self, couchdb):
+    def _replicate_local(self):
         source_name = self._source
         target_name = self._target
 
-        if couchdb.db_type is CouchDB.DatabaseType.Cloudant and couchdb.auth:
-            headers = {'Authorization': 'Basic ' + couchdb.auth}
-            source = {'url': couchdb.get_url() + source_name, 'headers': headers}
-            target = {'url': couchdb.get_url() + target_name, 'headers': headers}
+        if self._couchdb.db_type is CouchDB.DatabaseType.Cloudant and self._couchdb.auth:
+            headers = {'Authorization': 'Basic ' + self._couchdb.auth}
+            source = {'url': self._couchdb.get_url() + source_name, 'headers': headers}
+            target = {'url': self._couchdb.get_url() + target_name, 'headers': headers}
         else:
             source = source_name
             target = target_name
 
         if self._drop_first:
             try:
-                couchdb.delete_database(target_name)
+                self._couchdb.delete_database(target_name)
             except:
                 pass
             if not self._create:
-                couchdb.create_database(target_name)
+                self._couchdb.create_database(target_name)
 
-        return couchdb.create_replication(source, target, create_target=self._create, continuous=self._continuous)
+        return self._couchdb.create_replication(source, target, create_target=self._create, continuous=self._continuous)
 
-    def _replicate_remote(self, couchdb):
+    def _replicate_remote(self):
         source = self._source
         target = self._target
         source_is_remote = not self._is_local(source)
         target_is_remote = not self._is_local(target)
 
         if source_is_remote:
-            source_couchdb = self._get_couchdb_from_url(source, couchdb.get_credentials_callback)
+            source_couchdb = self._get_couchdb_from_url(source, self._couchdb.get_credentials_callback)
             source_name = self._get_database_from_url(source)
         else:
-            source_couchdb = couchdb
+            source_couchdb = self._couchdb
 
         if target_is_remote:
-            target_couchdb = self._get_couchdb_from_url(target, couchdb.get_credentials_callback)
+            target_couchdb = self._get_couchdb_from_url(target, self._couchdb.get_credentials_callback)
             target_name = self._get_database_from_url(target)
         else:
-            target_couchdb = couchdb
+            target_couchdb = self._couchdb
 
         # asking for the replicator database will force the user to give the right auth credentials
         source_couchdb.get_database('_replicator')
@@ -111,7 +112,7 @@ class Replication:
             if not self._create:
                 target_couchdb.create_database(target_name)
 
-        return couchdb.create_replication(source, target, create_target=self._create, continuous=self._continuous)
+        return self._couchdb.create_replication(source, target, create_target=self._create, continuous=self._continuous)
 
     @staticmethod
     def _is_local(db):

@@ -11,6 +11,7 @@ from src.model_mapper import ModelMapper
 from src.gtk_helper import GtkHelper
 from src.keyring import Keyring
 from src.replication import Replication
+from src.new_replication_queue import NewReplicationQueue
 from ui.credentials_dialog import CredentialsDialog
 from ui.new_database_dialog import NewDatabaseDialog
 from ui.delete_databases_dialog import DeleteDatabasesDialog
@@ -36,7 +37,7 @@ class MainWindow:
         self.new_database_dialog = NewDatabaseDialog(builder)
         self.new_single_replication_dialog = NewSingleReplicationDialog(builder)
         self.delete_databases_dialog = DeleteDatabasesDialog(builder)
-        self.new_replications_window = NewReplicationsWindow(builder, self.on_hide_new_replication_window)
+        self._new_replications_window = NewReplicationsWindow(builder, self.on_hide_new_replication_window)
 
         self._database_model = Gtk.ListStore(str, int, int, int, str, str, object)
         self.treeview_databases.set_model(self._database_model)
@@ -59,6 +60,8 @@ class MainWindow:
         self._replication_tasks_model.set_sort_func(0, compare_string_cols('source'))
         self._replication_tasks_model.set_sort_func(1, compare_string_cols('target'))
         self._replication_tasks_model.set_sort_func(2, compare_string_cols('state'))
+
+        self._replication_queue = NewReplicationQueue(self.report_error)
 
         self._auto_update_thread = threading.Thread(target=self.auto_update_handler)
         self._auto_update_thread.daemon = True
@@ -232,6 +235,12 @@ class MainWindow:
             self.infobar_warnings.show()
         GtkHelper.invoke(func)
 
+    def queue_replication(self, repl):
+        ref = self._new_replications_window.add(repl)
+        self._replication_queue.put(repl,
+                                    lambda: self._new_replications_window.update_success(ref),
+                                    lambda err: self._new_replications_window.update_failed(ref, err))
+
     # region Properties
     @property
     def server(self):
@@ -345,8 +354,8 @@ class MainWindow:
                 pass
 
             if backup_database:
-                task = Replication(source_name, target_name, drop_first=True, create=True)
-                self.couchdb_request(lambda: task.replicate(self._couchdb))
+                repl = Replication(self._couchdb, source_name, target_name, drop_first=True, create=True)
+                self.queue_replication(repl)
 
     def on_menu_databases_restore(self, menu):
         selected_databases = self.selected_databases
@@ -366,8 +375,8 @@ class MainWindow:
                 pass
 
             if restore_database:
-                task = Replication(source_name, target_name, drop_first=True, create=True)
-                self.couchdb_request(lambda: task.replicate(self._couchdb))
+                repl = Replication(self._couchdb, source_name, target_name, drop_first=True, create=True)
+                self.queue_replication(repl)
 
     def on_menuitem_databases_compact(self, menu):
         selected_databases = self.selected_databases
@@ -403,12 +412,12 @@ class MainWindow:
         selected_databases = self.selected_databases
         if len(selected_databases) == 1:
             db = selected_databases[0]
-            result = self.new_single_replication_dialog.run(db.db_name)
+            result = self.new_single_replication_dialog.run(self._couchdb, db.db_name)
             if result == Gtk.ResponseType.OK:
                 self.checkmenuitem_view_new_replication_window.set_active(True)
 
-                for replication in self.new_single_replication_dialog.replications:
-                    replication.replicate(self._couchdb)
+                for repl in self.new_single_replication_dialog.replications:
+                    self.queue_replication(repl)
 
     def on_menu_databases_show(self, menu):
         connected = self._couchdb is not None
@@ -441,9 +450,9 @@ class MainWindow:
     def on_checkmenuitem_view_new_replication_window_toggled(self, menu):
         active = self.checkmenuitem_view_new_replication_window.get_active()
         if active:
-            self.new_replications_window.show()
+            self._new_replications_window.show()
         else:
-            self.new_replications_window.hide()
+            self._new_replications_window.hide()
 
     def on_hide_new_replication_window(self):
         self.checkmenuitem_view_new_replication_window.set_active(False)
