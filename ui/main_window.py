@@ -3,6 +3,7 @@ import threading
 import webbrowser
 import re
 import collections
+from urllib.parse import urlparse
 
 from gi.repository import Gtk, Gdk
 
@@ -31,6 +32,10 @@ class MainWindow:
 
     _watch_cursor = Gdk.Cursor.new(Gdk.CursorType.WATCH)
 
+    DRAG_BUTTON_MASK = Gdk.ModifierType.BUTTON1_MASK
+    DRAG_TARGETS = [('text/plain', 0, 0)]
+    DRAG_ACTION = Gdk.DragAction.COPY
+
     def __init__(self, builder):
         self._win = builder.get_object('applicationwindow', target=self, include_children=True)
         self._database_menu = builder.get_object('menu_databases', target=self, include_children=True)
@@ -43,6 +48,8 @@ class MainWindow:
 
         self._database_model = Gtk.ListStore(str, int, int, int, str, str, object)
         self.treeview_databases.set_model(self._database_model)
+        self.treeview_databases.enable_model_drag_source(self.DRAG_BUTTON_MASK, self.DRAG_TARGETS, self.DRAG_ACTION)
+        self.treeview_databases.enable_model_drag_dest(self.DRAG_TARGETS, self.DRAG_ACTION)
 
         self._replication_tasks_model = Gtk.ListStore(str, str, str, int, bool, str, str, object)
         self.treeview_tasks.set_model(self._replication_tasks_model)
@@ -356,7 +363,7 @@ class MainWindow:
                 pass
 
             if backup_database:
-                repl = Replication(self._couchdb, source_name, target_name, drop_first=True, create=True)
+                repl = Replication(self._couchdb.clone(), source_name, target_name, drop_first=True, create=True)
                 self.queue_replication(repl)
 
     def on_menu_databases_restore(self, menu):
@@ -377,7 +384,7 @@ class MainWindow:
                 pass
 
             if restore_database:
-                repl = Replication(self._couchdb, source_name, target_name, drop_first=True, create=True)
+                repl = Replication(self._couchdb.clone(), source_name, target_name, drop_first=True, create=True)
                 self.queue_replication(repl)
 
     def on_menuitem_databases_compact(self, menu):
@@ -471,6 +478,31 @@ class MainWindow:
 
     def on_imagemenuitem_file_quit(self, menu):
         self.close()
+
+    def on_treeview_databases_drag_data_received(self, widget, drag_context, x, y, data, info, time):
+        if self._couchdb and info == 0:
+            text = data.get_text()
+            urls = text.split('\n')
+            for url in urls:
+                if url.find('http') == 0:
+                    u = urlparse(url)
+                    if not (u.hostname == self.server and u.port == self.port):
+                        target = u.path[1::]
+                        repl = Replication(self._couchdb, url, target, continuous=False, create=True)
+                        self.queue_replication(repl)
+            self.checkmenuitem_view_new_replication_window.set_active(True)
+
+    def on_treeview_databases_drag_data_get(self, widget, drag_context, data, info, time):
+        selected_databases = self.selected_databases
+        selected_count = len(selected_databases)
+        if selected_count > 0:
+            text = ''
+            url = self._couchdb.get_url()
+            for db in selected_databases:
+                if len(text) > 0:
+                    text += '\n'
+                text += url + db.db_name
+            data.set_text(text, -1)
     # endregion
 
     # region Static methods

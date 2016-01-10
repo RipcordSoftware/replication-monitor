@@ -511,6 +511,8 @@
                     <property name="rubber_banding">True</property>
                     <property name="activate_on_single_click">True</property>
                     <signal name="button-press-event" handler="on_database_button_press_event" swapped="no"/>
+                    <signal name="drag-data-get" handler="on_treeview_databases_drag_data_get" swapped="no"/>
+                    <signal name="drag-data-received" handler="on_treeview_databases_drag_data_received" swapped="no"/>
                     <signal name="popup-menu" handler="on_databases_popup_menu" swapped="no"/>
                     <child internal-child="selection">
                       <object class="GtkTreeSelection" id="treeview-selection">
