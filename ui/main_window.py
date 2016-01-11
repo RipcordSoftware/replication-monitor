@@ -18,6 +18,7 @@ from ui.new_database_dialog import NewDatabaseDialog
 from ui.delete_databases_dialog import DeleteDatabasesDialog
 from ui.new_single_replication_dialog import NewSingleReplicationDialog
 from ui.new_multiple_replications_dialog import NewMultipleReplicationDialog
+from ui.remote_replication_dialog import RemoteReplicationDialog
 from ui.new_replications_window import NewReplicationsWindow
 
 
@@ -45,6 +46,7 @@ class MainWindow:
         self.new_multiple_replication_dialog = NewMultipleReplicationDialog(builder)
         self.delete_databases_dialog = DeleteDatabasesDialog(builder)
         self._new_replications_window = NewReplicationsWindow(builder, self.on_hide_new_replication_window)
+        self.remote_replication_dialog = RemoteReplicationDialog(builder)
 
         self._database_model = Gtk.ListStore(str, int, int, int, str, str, object)
         self.treeview_databases.set_model(self._database_model)
@@ -438,6 +440,17 @@ class MainWindow:
             for repl in replications:
                 self.queue_replication(repl)
 
+    def on_menuitem_databases_replication_remote(self, menu):
+        replications = None
+        result = self.remote_replication_dialog.run(self._couchdb)
+        if result == Gtk.ResponseType.OK:
+            replications = self.remote_replication_dialog.replications
+
+        if replications:
+            self.checkmenuitem_view_new_replication_window.set_active(True)
+            for repl in replications:
+                self.queue_replication(repl)
+
     def on_menu_databases_show(self, menu):
         connected = self._couchdb is not None
         selected_databases = self.selected_databases
@@ -456,6 +469,7 @@ class MainWindow:
         self.menuitem_databases_delete.set_sensitive(single_row or multiple_rows)
         self.menuitem_databases_compact.set_sensitive(single_row)
         self.menuitem_databases_replication_new.set_sensitive(single_row or multiple_rows)
+        self.menuitem_databases_replication_from_remote.set_sensitive(connected)
 
     def on_menu_databases_realize(self, menu):
         self.on_menu_databases_show(menu)

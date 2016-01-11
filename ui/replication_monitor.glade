@@ -654,7 +654,9 @@
     <property name="destroy_with_parent">True</property>
     <property name="type_hint">dialog</property>
     <property name="skip_taskbar_hint">True</property>
+    <property name="skip_pager_hint">True</property>
     <property name="transient_for">applicationwindow</property>
+    <property name="has_resize_grip">True</property>
     <child internal-child="vbox">
       <object class="GtkBox" id="dialog-vbox1">
         <property name="can_focus">False</property>
@@ -824,6 +826,7 @@
     <property name="destroy_with_parent">True</property>
     <property name="type_hint">dialog</property>
     <property name="skip_taskbar_hint">True</property>
+    <property name="skip_pager_hint">True</property>
     <property name="transient_for">applicationwindow</property>
     <property name="has_resize_grip">True</property>
     <signal name="show" handler="on_dialog_delete_databases_show" swapped="no"/>
@@ -970,11 +973,14 @@
     <property name="can_focus">False</property>
     <property name="title" translatable="yes">New Database</property>
     <property name="resizable">False</property>
+    <property name="modal">True</property>
     <property name="window_position">center-on-parent</property>
     <property name="destroy_with_parent">True</property>
     <property name="type_hint">dialog</property>
     <property name="skip_taskbar_hint">True</property>
+    <property name="skip_pager_hint">True</property>
     <property name="transient_for">applicationwindow</property>
+    <property name="has_resize_grip">True</property>
     <signal name="show" handler="on_dialog_new_database_show" swapped="no"/>
     <child internal-child="vbox">
       <object class="GtkBox" id="dialog-vbox2">
@@ -1077,6 +1083,7 @@
     <property name="modal">True</property>
     <property name="type_hint">dialog</property>
     <property name="skip_taskbar_hint">True</property>
+    <property name="skip_pager_hint">True</property>
     <property name="transient_for">applicationwindow</property>
     <property name="has_resize_grip">True</property>
     <signal name="show" handler="on_dialog_new_replication_show" swapped="no"/>
@@ -1608,8 +1615,12 @@
   <object class="GtkDialog" id="dialog_new_replications">
     <property name="can_focus">False</property>
     <property name="title" translatable="yes">New Replications</property>
+    <property name="modal">True</property>
     <property name="type_hint">dialog</property>
+    <property name="skip_taskbar_hint">True</property>
+    <property name="skip_pager_hint">True</property>
     <property name="transient_for">applicationwindow</property>
+    <property name="has_resize_grip">True</property>
     <signal name="show" handler="on_dialog_new_replications_show" swapped="no"/>
     <child internal-child="vbox">
       <object class="GtkBox" id="dialog-vbox8">
@@ -2110,6 +2121,412 @@
       </object>
     </child>
   </object>
+  <object class="GtkDialog" id="dialog_remote_replication">
+    <property name="can_focus">False</property>
+    <property name="title" translatable="yes">Replicate From Remote</property>
+    <property name="modal">True</property>
+    <property name="type_hint">dialog</property>
+    <property name="skip_taskbar_hint">True</property>
+    <property name="skip_pager_hint">True</property>
+    <property name="transient_for">applicationwindow</property>
+    <property name="has_resize_grip">True</property>
+    <signal name="show" handler="on_dialog_remote_replication_show" swapped="no"/>
+    <child internal-child="vbox">
+      <object class="GtkBox" id="dialog-vbox7">
+        <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <child internal-child="action_area">
+          <object class="GtkButtonBox" id="dialog-action_area7">
+            <property name="can_focus">False</property>
+            <property name="margin_right">8</property>
+            <property name="margin_top">4</property>
+            <property name="margin_bottom">4</property>
+            <property name="layout_style">end</property>
+            <child>
+              <object class="GtkButton" id="button_remote_replications_dialog_replicate">
+                <property name="label" translatable="yes">Replicate</property>
+                <property name="visible">True</property>
+                <property name="sensitive">False</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <signal name="clicked" handler="on_button_remote_replication_dialog_replicate" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="button_remote_replications_dialog_cancel">
+                <property name="label">gtk-cancel</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_stock">True</property>
+                <property name="always_show_image">True</property>
+                <signal name="clicked" handler="on_button_remote_replication_dialog_cancel" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkBox" id="box20">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="margin_left">8</property>
+            <property name="margin_right">8</property>
+            <property name="orientation">vertical</property>
+            <property name="spacing">8</property>
+            <child>
+              <object class="GtkBox" id="box21">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="margin_left">4</property>
+                <property name="margin_right">4</property>
+                <property name="spacing">12</property>
+                <child>
+                  <object class="GtkLabel" id="label15">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Server</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkEntry" id="entry_remote_replication_dialog_server">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="tooltip_text" translatable="yes">The remote server name</property>
+                    <property name="width_chars">40</property>
+                    <property name="caps_lock_warning">False</property>
+                    <property name="input_hints">GTK_INPUT_HINT_NO_SPELLCHECK | GTK_INPUT_HINT_NONE</property>
+                    <signal name="changed" handler="on_entry_remote_replication_dialog_server_changed" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkComboBoxText" id="comboboxtext_remote_replication_dialog_port">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="tooltip_text" translatable="yes">The remote server port</property>
+                    <property name="active">2</property>
+                    <property name="has_entry">True</property>
+                    <items>
+                      <item translatable="yes">80</item>
+                      <item translatable="yes">443</item>
+                      <item translatable="yes">5984</item>
+                      <item translatable="yes">5994</item>
+                    </items>
+                    <signal name="changed" handler="on_comboboxtext_remote_replication_dialog_port_changed" swapped="no"/>
+                    <child internal-child="entry">
+                      <object class="GtkEntry" id="comboboxtext-entry8">
+                        <property name="can_focus">True</property>
+                        <property name="max_length">5</property>
+                        <property name="width_chars">6</property>
+                        <property name="max_width_chars">5</property>
+                        <property name="caps_lock_warning">False</property>
+                        <property name="input_purpose">digits</property>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkCheckButton" id="checkbutton_remote_replication_dialog_secure">
+                    <property name="label" translatable="yes">Secure</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">False</property>
+                    <property name="tooltip_text" translatable="yes">Check to use SSL to secure the remote replication session</property>
+                    <property name="xalign">0</property>
+                    <property name="draw_indicator">True</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">3</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="button_remote_replication_dialog_connect">
+                    <property name="label">gtk-connect</property>
+                    <property name="visible">True</property>
+                    <property name="sensitive">False</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">True</property>
+                    <property name="tooltip_text" translatable="yes">Click to connect to the remote AvanceDB or CouchDB server</property>
+                    <property name="use_stock">True</property>
+                    <property name="always_show_image">True</property>
+                    <signal name="clicked" handler="on_button_remote_replication_dialog_connect_clicked" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">4</property>
+                  </packing>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkScrolledWindow" id="scrolledwindow7">
+                <property name="height_request">320</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="shadow_type">in</property>
+                <child>
+                  <object class="GtkTreeView" id="treeview_remote_replication_databases">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="rules_hint">True</property>
+                    <property name="enable_search">False</property>
+                    <property name="show_expanders">False</property>
+                    <property name="rubber_banding">True</property>
+                    <property name="activate_on_single_click">True</property>
+                    <child internal-child="selection">
+                      <object class="GtkTreeSelection" id="treeview-selection11"/>
+                    </child>
+                    <child>
+                      <object class="GtkTreeViewColumn" id="treeviewcolumn23">
+                        <property name="resizable">True</property>
+                        <property name="sizing">fixed</property>
+                        <property name="title" translatable="yes">Source</property>
+                        <child>
+                          <object class="GtkCellRendererToggle" id="cellrenderertoggle_source">
+                            <signal name="toggled" handler="on_cellrenderertoggle_source_toggled" swapped="no"/>
+                          </object>
+                          <attributes>
+                            <attribute name="active">0</attribute>
+                          </attributes>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkTreeViewColumn" id="treeviewcolumn22">
+                        <property name="resizable">True</property>
+                        <property name="sizing">fixed</property>
+                        <property name="fixed_width">300</property>
+                        <property name="title" translatable="yes">Name</property>
+                        <child>
+                          <object class="GtkCellRendererText" id="cellrenderertext20"/>
+                          <attributes>
+                            <attribute name="text">1</attribute>
+                          </attributes>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkFrame" id="frame5">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label_xalign">0</property>
+                <child>
+                  <object class="GtkAlignment" id="alignment5">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="top_padding">4</property>
+                    <property name="bottom_padding">4</property>
+                    <child>
+                      <object class="GtkBox" id="box22">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="margin_left">10</property>
+                        <property name="resize_mode">queue</property>
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">4</property>
+                        <child>
+                          <object class="GtkBox" id="box23">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="spacing">12</property>
+                            <property name="homogeneous">True</property>
+                            <child>
+                              <object class="GtkCheckButton" id="checkbutton_remote_replication_dialog_continuous">
+                                <property name="label" translatable="yes">Continuous</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="receives_default">False</property>
+                                <property name="tooltip_text" translatable="yes">Check to configure the replication as continuous</property>
+                                <property name="xalign">0</property>
+                                <property name="draw_indicator">True</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkCheckButton" id="checkbutton_remote_replication_dialog_create">
+                                <property name="label" translatable="yes">Create</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="receives_default">False</property>
+                                <property name="tooltip_text" translatable="yes">When checked the target database will be created</property>
+                                <property name="xalign">0</property>
+                                <property name="active">True</property>
+                                <property name="draw_indicator">True</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkCheckButton" id="checkbutton_remote_replication_dialog_drop_first">
+                                <property name="label" translatable="yes">Drop First</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="receives_default">False</property>
+                                <property name="tooltip_text" translatable="yes">When checked the target database will be dropped before replication is configured</property>
+                                <property name="xalign">0</property>
+                                <property name="draw_indicator">True</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">2</property>
+                              </packing>
+                            </child>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkBox" id="box24">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="spacing">12</property>
+                            <property name="homogeneous">True</property>
+                            <child>
+                              <object class="GtkRadioButton" id="radiobutton_remote_replication_dialog_docs_and_designs">
+                                <property name="label" translatable="yes">Docs and Designs</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="receives_default">False</property>
+                                <property name="tooltip_text" translatable="yes">Replicate both documents and designs</property>
+                                <property name="xalign">0</property>
+                                <property name="active">True</property>
+                                <property name="draw_indicator">True</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkRadioButton" id="radiobutton_remote_replication_dialog_only_docs">
+                                <property name="label" translatable="yes">Only Docs</property>
+                                <property name="visible">True</property>
+                                <property name="sensitive">False</property>
+                                <property name="can_focus">True</property>
+                                <property name="receives_default">False</property>
+                                <property name="tooltip_text" translatable="yes">Only replicate the database documents</property>
+                                <property name="xalign">0</property>
+                                <property name="draw_indicator">True</property>
+                                <property name="group">radiobutton_new_replication_dialog_docs_and_designs</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkRadioButton" id="radiobutton_remote_replication_dialog_only_designs">
+                                <property name="label" translatable="yes">Only Designs</property>
+                                <property name="visible">True</property>
+                                <property name="sensitive">False</property>
+                                <property name="can_focus">True</property>
+                                <property name="receives_default">False</property>
+                                <property name="tooltip_text" translatable="yes">Only replicate the database designs</property>
+                                <property name="xalign">0</property>
+                                <property name="draw_indicator">True</property>
+                                <property name="group">radiobutton_new_replication_dialog_docs_and_designs</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">2</property>
+                              </packing>
+                            </child>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child type="label">
+                  <object class="GtkLabel" id="label18">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Options</property>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">2</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+  </object>
   <object class="GtkWindow" id="window_new_replications">
     <property name="width_request">640</property>
     <property name="height_request">320</property>
@@ -2286,9 +2703,19 @@
                 <property name="visible">True</property>
                 <property name="sensitive">False</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes">New</property>
+                <property name="label" translatable="yes">_New</property>
                 <property name="use_underline">True</property>
                 <signal name="activate" handler="on_menuitem_databases_replication_new" swapped="no"/>
+              </object>
+            </child>
+            <child>
+              <object class="GtkMenuItem" id="menuitem_databases_replication_from_remote">
+                <property name="visible">True</property>
+                <property name="sensitive">False</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">From _Remote</property>
+                <property name="use_underline">True</property>
+                <signal name="activate" handler="on_menuitem_databases_replication_remote" swapped="no"/>
               </object>
             </child>
           </object>
