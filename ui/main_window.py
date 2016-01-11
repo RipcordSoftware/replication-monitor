@@ -20,6 +20,7 @@ from ui.new_single_replication_dialog import NewSingleReplicationDialog
 from ui.new_multiple_replications_dialog import NewMultipleReplicationDialog
 from ui.remote_replication_dialog import RemoteReplicationDialog
 from ui.new_replications_window import NewReplicationsWindow
+from ui.about_dialog import AboutDialog
 
 
 class MainWindow:
@@ -47,6 +48,7 @@ class MainWindow:
         self.delete_databases_dialog = DeleteDatabasesDialog(builder)
         self._new_replications_window = NewReplicationsWindow(builder, self.on_hide_new_replication_window)
         self.remote_replication_dialog = RemoteReplicationDialog(builder)
+        self.about_dialog = AboutDialog(builder)
 
         self._database_model = Gtk.ListStore(str, int, int, int, str, str, object)
         self.treeview_databases.set_model(self._database_model)
@@ -517,6 +519,9 @@ class MainWindow:
                     text += '\n'
                 text += url + db.db_name
             data.set_text(text, -1)
+
+    def on_menuitem_help_about_activate(self, menu):
+        self.about_dialog.run()
     # endregion
 
     # region Static methods

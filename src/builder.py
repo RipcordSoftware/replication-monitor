@@ -16,11 +16,11 @@ class Builder:
         :param filename: The path to the glade file
         :return: Nothing
         """
+        self._builder.add_from_file(filename)
+
         with open(filename, 'rt') as f:
             ui = f.read()
-
         self.ui_root = ET.fromstring(ui)
-        self._builder.add_from_string(ui)
 
     def get_object(self, ui_id, target=None, include_children=False):
         """
