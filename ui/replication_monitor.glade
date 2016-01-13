@@ -614,8 +614,8 @@
                       <object class="GtkTreeViewColumn" id="treeviewcolumn12">
                         <property name="resizable">True</property>
                         <property name="sizing">fixed</property>
-                        <property name="fixed_width">140</property>
-                        <property name="title" translatable="yes">Targets</property>
+                        <property name="fixed_width">100</property>
+                        <property name="title" translatable="yes">Compacting</property>
                         <property name="clickable">True</property>
                         <property name="sort_indicator">True</property>
                         <property name="sort_column_id">4</property>
@@ -632,7 +632,7 @@
                         <property name="resizable">True</property>
                         <property name="sizing">fixed</property>
                         <property name="fixed_width">140</property>
-                        <property name="title" translatable="yes">Sources</property>
+                        <property name="title" translatable="yes">Revs. Limit</property>
                         <property name="clickable">True</property>
                         <property name="sort_indicator">True</property>
                         <property name="sort_column_id">5</property>

@@ -199,6 +199,16 @@ class CouchDB:
 
         return tasks
 
+    def get_revs_limit(self, name):
+        response = self._make_request('/' + name + '/_revs_limit', 'GET')
+        if response.status != 200:
+            raise CouchDBException(response)
+        try:
+            response = int(response.body)
+        except:
+            raise CouchDBException(response)
+        return response
+
     def create_replication(self, source, target, create_target=False, continuous=False):
         job = {'source': source, 'target': target, 'create_target': create_target, 'continuous': continuous}
 

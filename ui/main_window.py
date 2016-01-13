@@ -4,6 +4,8 @@ import webbrowser
 import re
 import collections
 from urllib.parse import urlparse
+from collections import namedtuple
+import concurrent.futures
 
 from gi.repository import Gtk, Gdk
 
@@ -50,7 +52,7 @@ class MainWindow:
         self.remote_replication_dialog = RemoteReplicationDialog(builder)
         self.about_dialog = AboutDialog(builder)
 
-        self._database_model = Gtk.ListStore(str, int, int, int, str, str, object)
+        self._database_model = Gtk.ListStore(str, int, int, int, str, int, object)
         self.treeview_databases.set_model(self._database_model)
         self.treeview_databases.enable_model_drag_source(self.DRAG_BUTTON_MASK, self.DRAG_TARGETS, self.DRAG_ACTION)
         self.treeview_databases.enable_model_drag_dest(self.DRAG_TARGETS, self.DRAG_ACTION)
@@ -146,9 +148,23 @@ class MainWindow:
         couchdb = couchdb if couchdb else self._couchdb
 
         databases = []
-        for name in couchdb.get_databases():
-            db = couchdb.get_database(name)
-            databases.append(db)
+
+        def get_database_worker(couchdb, name):
+            with couchdb:
+                db = couchdb.get_database(name)
+                limit = couchdb.get_revs_limit(name)
+                db = self.append_field(db, ('revs_limit', limit), 'Database')
+                databases.append(db)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+            futures = []
+            for name in couchdb.get_databases():
+                futures.append(executor.submit(get_database_worker, couchdb.clone(), name))
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    future.result()
+                except:
+                    raise
 
         def func():
             old_databases = {}
@@ -547,8 +563,8 @@ class MainWindow:
             'doc_count',
             lambda i: MainWindow.get_update_sequence(i.update_seq),
             lambda i: i.disk_size / 1024 / 1024,
-            None,
-            None])
+            lambda i: 'Yes' if i.compact_running else 'No',
+            'revs_limit'])
 
     @staticmethod
     def new_replication_task_row(task):
@@ -560,5 +576,15 @@ class MainWindow:
             'continuous',
             lambda t: time.strftime('%H:%M:%S', time.gmtime(t.started_on)),
             lambda t: time.strftime('%H:%M:%S', time.gmtime(t.updated_on))])
+
+    @staticmethod
+    def append_field(source, field, name='NewType'):
+        fields = [key for key in source._fields]
+        fields.append(field[0])
+        NewType = namedtuple(name, fields)
+        values = [value for value in iter(source)]
+        values.append(field[1])
+        return NewType(*values)
+
 # endregion
 
