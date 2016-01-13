@@ -270,6 +270,15 @@ class MainWindow:
                                     lambda: self._new_replications_window.update_success(ref),
                                     lambda err: self._new_replications_window.update_failed(ref, err))
 
+    def set_selected_databases_limit(self, limit):
+        selected_databases = [item for item in self.selected_databases if item.db_name[0] != '_']
+        if len(selected_databases) > 0:
+            def func():
+                with self._couchdb.clone() as couchdb:
+                    for row in selected_databases:
+                        couchdb.set_revs_limit(row.db_name, limit)
+            self.couchdb_request(func)
+
     # region Properties
     @property
     def server(self):
@@ -488,6 +497,10 @@ class MainWindow:
         self.menuitem_databases_compact.set_sensitive(single_row)
         self.menuitem_databases_replication_new.set_sensitive(single_row or multiple_rows)
         self.menuitem_databases_replication_from_remote.set_sensitive(connected)
+        self.menuitem_database_set_revisions_1.set_sensitive(single_row or multiple_rows)
+        self.menuitem_database_set_revisions_10.set_sensitive(single_row or multiple_rows)
+        self.menuitem_database_set_revisions_100.set_sensitive(single_row or multiple_rows)
+        self.menuitem_database_set_revisions_1000.set_sensitive(single_row or multiple_rows)
 
     def on_menu_databases_realize(self, menu):
         self.on_menu_databases_show(menu)
@@ -538,6 +551,18 @@ class MainWindow:
 
     def on_menuitem_help_about_activate(self, menu):
         self.about_dialog.run()
+
+    def on_menuitem_database_set_revisions_1_activate(self, menu):
+        self.set_selected_databases_limit(1)
+
+    def on_menuitem_database_set_revisions_10_activate(self, menu):
+        self.set_selected_databases_limit(10)
+
+    def on_menuitem_database_set_revisions_100_activate(self, menu):
+        self.set_selected_databases_limit(100)
+
+    def on_menuitem_database_set_revisions_1000_activate(self, menu):
+        self.set_selected_databases_limit(1000)
     # endregion
 
     # region Static methods

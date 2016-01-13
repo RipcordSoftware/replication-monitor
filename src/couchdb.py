@@ -209,6 +209,13 @@ class CouchDB:
             raise CouchDBException(response)
         return response
 
+    def set_revs_limit(self, name, limit):
+        url = '/' + name + '/_revs_limit'
+        response = self._make_request(url, 'PUT', body=str(limit), content_type='application/json')
+        if response.status != 200 or not response.is_json:
+            raise CouchDBException(response)
+        return response.body
+
     def create_replication(self, source, target, create_target=False, continuous=False):
         job = {'source': source, 'target': target, 'create_target': create_target, 'continuous': continuous}
 

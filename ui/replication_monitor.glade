@@ -2733,6 +2733,62 @@
               </object>
             </child>
             <child>
+              <object class="GtkMenuItem" id="menuitem7">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">Revisions</property>
+                <property name="use_underline">True</property>
+                <child type="submenu">
+                  <object class="GtkMenu" id="menu7">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <child>
+                      <object class="GtkMenuItem" id="menuitem_database_set_revisions_1">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">Set to 1</property>
+                        <property name="use_underline">True</property>
+                        <signal name="activate" handler="on_menuitem_database_set_revisions_1_activate" swapped="no"/>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkMenuItem" id="menuitem_database_set_revisions_10">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">Set to 10</property>
+                        <property name="use_underline">True</property>
+                        <signal name="activate" handler="on_menuitem_database_set_revisions_10_activate" swapped="no"/>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkMenuItem" id="menuitem_database_set_revisions_100">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">Set to 100</property>
+                        <property name="use_underline">True</property>
+                        <signal name="activate" handler="on_menuitem_database_set_revisions_100_activate" swapped="no"/>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkMenuItem" id="menuitem_database_set_revisions_1000">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">Set to 1000</property>
+                        <property name="use_underline">True</property>
+                        <signal name="activate" handler="on_menuitem_database_set_revisions_1000_activate" swapped="no"/>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkSeparatorMenuItem" id="separatormenuitem1">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+              </object>
+            </child>
+            <child>
               <object class="GtkMenuItem" id="menuitem_databases_compact">
                 <property name="visible">True</property>
                 <property name="sensitive">False</property>
