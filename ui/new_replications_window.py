@@ -10,6 +10,12 @@ class NewReplicationsWindow:
         self._model = Gtk.ListStore(str, str, str, str)
         self.treeview_new_replications_queue.set_model(self._model)
 
+    def get_title(self):
+        return self._win.get_title()
+
+    def set_title(self, title):
+        return self._win.set_title(title)
+
     def show(self):
         self._win.show()
 

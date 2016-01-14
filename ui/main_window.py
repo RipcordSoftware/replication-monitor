@@ -279,6 +279,21 @@ class MainWindow:
                         couchdb.set_revs_limit(row.db_name, limit)
             self.couchdb_request(func)
 
+    def reset_window_titles(self):
+        title = self.get_default_window_title(self._win)
+        self._win.set_title(title)
+        title = self.get_default_window_title(self._new_replications_window)
+        self._new_replications_window.set_title(title)
+
+    def update_window_titles(self):
+        url = self._couchdb.get_url()
+        title = self.get_default_window_title(self._win)
+        title += ' - ' + url
+        self._win.set_title(title)
+        title = self.get_default_window_title(self._new_replications_window)
+        title += ' - ' + url
+        self._new_replications_window.set_title(title)
+
     # region Properties
     @property
     def server(self):
@@ -317,6 +332,7 @@ class MainWindow:
         self._replication_tasks_model.clear()
         self._database_model.clear()
         self.reset_statusbar()
+        self.reset_window_titles()
 
         try:
             couchdb = self.get_couchdb()
@@ -326,6 +342,7 @@ class MainWindow:
                 self.update_databases()
                 self.update_replication_tasks()
                 self.update_statusbar()
+                self.update_window_titles()
 
             self.couchdb_request(request)
         except Exception as e:
@@ -611,5 +628,9 @@ class MainWindow:
         values.append(field[1])
         return NewType(*values)
 
+    @staticmethod
+    def get_default_window_title(window):
+        title = window.get_title().split('-')[0].rstrip(' ')
+        return title
 # endregion
 
