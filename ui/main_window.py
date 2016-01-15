@@ -371,10 +371,11 @@ class MainWindow:
             name = self.new_database_dialog.name
 
             def request():
-                self._couchdb.create_database(name)
-                db = self._couchdb.get_database(name)
-                row = MainWindow.new_database_row(db)
-                self._database_model.append(row)
+                with self._couchdb.clone() as couchdb:
+                    couchdb.create_database(name)
+                    db = couchdb.get_database(name)
+                    row = MainWindow.new_database_row(db)
+                    self._database_model.append(row)
             self.couchdb_request(request)
 
     def on_menu_databases_delete(self, menu):
@@ -385,10 +386,11 @@ class MainWindow:
                 model = self.treeview_databases.get_model()
 
                 def request():
-                    for row in reversed(self.delete_databases_dialog.selected_database_rows):
-                        self._couchdb.delete_database(row.db.db_name)
-                        itr = model.get_iter(row.index)
-                        model.remove(itr)
+                    with self._couchdb.clone() as couchdb:
+                        for row in reversed(self.delete_databases_dialog.selected_database_rows):
+                            couchdb.delete_database(row.db.db_name)
+                            itr = model.get_iter(row.index)
+                            model.remove(itr)
                 self.couchdb_request(request)
 
     def on_menu_databases_backup(self, menu):
@@ -436,8 +438,11 @@ class MainWindow:
     def on_menuitem_databases_compact(self, menu):
         selected_databases = self.selected_databases
         if len(selected_databases) == 1:
-            name = selected_databases[0].db_name
-            self.couchdb_request(lambda: self._couchdb.compact_database(name))
+            def func():
+                name = selected_databases[0].db_name
+                with self._couchdb.clone() as couchdb:
+                    couchdb.compact_database(name)
+            self.couchdb_request(func)
 
     def on_menu_databases_browse_futon(self, menu):
         selected_databases = self.selected_database_rows
