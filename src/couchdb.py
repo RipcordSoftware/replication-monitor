@@ -182,11 +182,13 @@ class CouchDB:
         return response.body
 
     def get_docs(self, name, limit=10):
-        url = '/' + name + '/_all_docs?limit=' + str(limit)
+        query_string = 'include_docs=true' + ('&limit=' + str(limit) if limit is not None else '')
+        url = '/' + name + '/_all_docs?' + query_string
         response = self._make_request(url)
         if response.status != 200 or not response.is_json:
             raise CouchDBException(response)
-        return response.body
+        docs = [row.doc for row in response.body.rows]
+        return docs
 
     def get_active_tasks(self, task_type=None):
         response = self._make_request('/_active_tasks')
