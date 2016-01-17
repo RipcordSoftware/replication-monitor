@@ -4,12 +4,9 @@ import webbrowser
 import re
 import collections
 from urllib.parse import urlparse
-from collections import namedtuple
-import concurrent.futures
 
 from gi.repository import Gtk, Gdk
 
-from src.couchdb import CouchDB
 from src.model_mapper import ModelMapper
 from src.gtk_helper import GtkHelper
 from src.keyring import Keyring
@@ -24,11 +21,11 @@ from ui.remote_replication_dialog import RemoteReplicationDialog
 from ui.new_replications_window import NewReplicationsWindow
 from ui.about_dialog import AboutDialog
 
+from ui.main_window_model import MainWindowModel
+
 
 class MainWindow:
     SelectedDatabaseRow = collections.namedtuple('SelectedDatabaseRow', 'index db')
-
-    _couchdb = None
 
     _auto_update = False
     _auto_update_thread = None
@@ -41,6 +38,8 @@ class MainWindow:
     DRAG_ACTION = Gdk.DragAction.COPY
 
     def __init__(self, builder):
+        self._model = None
+
         self._win = builder.get_object('applicationwindow', target=self, include_children=True)
         self._database_menu = builder.get_object('menu_databases', target=self, include_children=True)
         self.credentials_dialog = CredentialsDialog(builder)
@@ -88,19 +87,19 @@ class MainWindow:
 
     def auto_update_handler(self):
         while not self._auto_update_exit.wait(5):
-            if self._couchdb and self._auto_update:
+            if self._model and self._auto_update:
                 try:
                     GtkHelper.idle(lambda: self.spinner_auto_update.set_visible(True))
-                    with self._couchdb.clone() as couchdb:
-                        self.update_replication_tasks(couchdb)
-                        self.update_databases(couchdb)
+                    self.update_replication_tasks()
+                    self.update_databases()
                 except Exception as e:
                     self.report_error(e)
                 finally:
                     GtkHelper.idle(lambda: self.spinner_auto_update.set_visible(False))
 
+    # TODO: rename as model_request
     def couchdb_request(self, func):
-        if self._couchdb:
+        if self._model:
             GtkHelper.invoke(lambda: self._win.get_window().set_cursor(self._watch_cursor), async=False)
 
             def task():
@@ -123,48 +122,28 @@ class MainWindow:
     def update_statusbar(self):
         def func():
             try:
-                with self._couchdb.clone() as couchdb:
-                    signature = couchdb.get_signature()
-                    server = couchdb.db_type.name + ' ' + str(signature.version)
+                signature = self._model.signature
+                server = self._model.database_type.name + ' ' + str(signature.version)
 
-                    auth_details = 'Admin Party'
-                    session = couchdb.get_session()
-                    user_ctx = session.userCtx
-                    if user_ctx and user_ctx.name:
-                        auth_details = user_ctx.name
-                        roles = ''
-                        for role in user_ctx.roles:
-                            roles += ', ' + role if len(roles) > 0 else role
-                        auth_details += ' [' + roles + ']'
+                auth_details = 'Admin Party'
+                session = self._model.session
+                user_ctx = session.userCtx
+                if user_ctx and user_ctx.name:
+                    auth_details = user_ctx.name
+                    roles = ''
+                    for role in user_ctx.roles:
+                        roles += ', ' + role if len(roles) > 0 else role
+                    auth_details += ' [' + roles + ']'
 
-                    status = server + ' - ' + auth_details
-                    self.statusbar.push(0, status)
+                status = server + ' - ' + auth_details
+                self.statusbar.push(0, status)
             except Exception as e:
                 GtkHelper.invoke(self.reset_statusbar)
         thread = threading.Thread(target=func)
         thread.run()
 
-    def update_databases(self, couchdb=None):
-        couchdb = couchdb if couchdb else self._couchdb
-
-        databases = []
-
-        def get_database_worker(couchdb, name):
-            with couchdb:
-                db = couchdb.get_database(name)
-                limit = couchdb.get_revs_limit(name)
-                db = self.append_field(db, ('revs_limit', limit), 'Database')
-                databases.append(db)
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-            futures = []
-            for name in couchdb.get_databases():
-                futures.append(executor.submit(get_database_worker, couchdb.clone(), name))
-            for future in concurrent.futures.as_completed(futures):
-                try:
-                    future.result()
-                except:
-                    raise
+    def update_databases(self):
+        databases = self._model.databases
 
         def func():
             old_databases = {}
@@ -196,10 +175,8 @@ class MainWindow:
 
         GtkHelper.invoke(func, async=False)
 
-    def update_replication_tasks(self, couchdb=None):
-        couchdb = couchdb if couchdb else self._couchdb
-
-        tasks = couchdb.get_active_tasks('replication')
+    def update_replication_tasks(self):
+        tasks = self._model.replication_tasks
 
         def func():
             old_tasks = {}
@@ -230,9 +207,6 @@ class MainWindow:
                 model.append(task)
 
         GtkHelper.invoke(func, async=False)
-
-    def get_couchdb(self):
-        return CouchDB(self.server, self.port, self.secure, self.get_credentials)
 
     def get_credentials(self, server_url):
         def func():
@@ -274,9 +248,8 @@ class MainWindow:
         selected_databases = [item for item in self.selected_databases if item.db_name[0] != '_']
         if len(selected_databases) > 0:
             def func():
-                with self._couchdb.clone() as couchdb:
-                    for row in selected_databases:
-                        couchdb.set_revs_limit(row.db_name, limit)
+                for row in selected_databases:
+                    self._model.set_revs_limit(row.db_name, limit)
             self.couchdb_request(func)
 
     def reset_window_titles(self):
@@ -286,7 +259,7 @@ class MainWindow:
         self._new_replications_window.set_title(title)
 
     def update_window_titles(self):
-        url = self._couchdb.get_url()
+        url = self._model.url
         title = self.get_default_window_title(self._win)
         title += ' - ' + url
         self._win.set_title(title)
@@ -327,7 +300,7 @@ class MainWindow:
 
     # region Event handlers
     def on_button_connect(self, button):
-        self._couchdb = None
+        self._model = None
         self.infobar_warnings.hide()
         self._replication_tasks_model.clear()
         self._database_model.clear()
@@ -335,8 +308,7 @@ class MainWindow:
         self.reset_window_titles()
 
         try:
-            couchdb = self.get_couchdb()
-            self._couchdb = couchdb
+            self._model = MainWindowModel(self.server, self.port, self.secure, self.get_credentials)
 
             def request():
                 self.update_databases()
@@ -371,11 +343,10 @@ class MainWindow:
             name = self.new_database_dialog.name
 
             def request():
-                with self._couchdb.clone() as couchdb:
-                    couchdb.create_database(name)
-                    db = couchdb.get_database(name)
-                    row = MainWindow.new_database_row(db)
-                    self._database_model.append(row)
+                self._model.create_database(name)
+                db = self._model.get_database(name)
+                row = MainWindow.new_database_row(db)
+                self._database_model.append(row)
             self.couchdb_request(request)
 
     def on_menu_databases_delete(self, menu):
@@ -386,11 +357,10 @@ class MainWindow:
                 model = self.treeview_databases.get_model()
 
                 def request():
-                    with self._couchdb.clone() as couchdb:
-                        for row in reversed(self.delete_databases_dialog.selected_database_rows):
-                            couchdb.delete_database(row.db.db_name)
-                            itr = model.get_iter(row.index)
-                            model.remove(itr)
+                    for row in reversed(self.delete_databases_dialog.selected_database_rows):
+                        self._model.delete_database(row.db.db_name)
+                        itr = model.get_iter(row.index)
+                        model.remove(itr)
                 self.couchdb_request(request)
 
     def on_menu_databases_backup(self, menu):
@@ -401,7 +371,7 @@ class MainWindow:
             target_name = 'backup$' + source_name
 
             try:
-                self._couchdb.get_database(target_name)
+                self._model.get_database(target_name)
                 response = GtkHelper.run_dialog(self._win, Gtk.MessageType.QUESTION,
                                                 Gtk.ButtonsType.YES_NO,
                                                 "Target database already exists, continue?")
@@ -411,7 +381,8 @@ class MainWindow:
                 pass
 
             if backup_database:
-                repl = Replication(self._couchdb.clone(), source_name, target_name, drop_first=True, create=True)
+                # TODO: review
+                repl = Replication(self._model.couchdb, source_name, target_name, drop_first=True, create=True)
                 self.queue_replication(repl)
 
     def on_menu_databases_restore(self, menu):
@@ -422,7 +393,7 @@ class MainWindow:
             target_name = source_name[7::]
 
             try:
-                self._couchdb.get_database(target_name)
+                self._model.get_database(target_name)
                 response = GtkHelper.run_dialog(self._win, Gtk.MessageType.QUESTION,
                                                 Gtk.ButtonsType.YES_NO,
                                                 "Target database already exists, continue?")
@@ -432,7 +403,8 @@ class MainWindow:
                 pass
 
             if restore_database:
-                repl = Replication(self._couchdb.clone(), source_name, target_name, drop_first=True, create=True)
+                # TODO: review
+                repl = Replication(self._model.couchdb, source_name, target_name, drop_first=True, create=True)
                 self.queue_replication(repl)
 
     def on_menuitem_databases_compact(self, menu):
@@ -440,8 +412,7 @@ class MainWindow:
         if len(selected_databases) == 1:
             def func():
                 name = selected_databases[0].db_name
-                with self._couchdb.clone() as couchdb:
-                    couchdb.compact_database(name)
+                self._model.compact_database(name)
             self.couchdb_request(func)
 
     def on_menu_databases_browse_futon(self, menu):
@@ -475,12 +446,14 @@ class MainWindow:
 
         if selected_count == 1:
             db = selected_databases[0]
-            result = self.new_single_replication_dialog.run(self._couchdb, db.db_name)
+            # TODO: review
+            result = self.new_single_replication_dialog.run(self._model.couchdb, db.db_name)
             if result == Gtk.ResponseType.OK:
                 replications = self.new_single_replication_dialog.replications
         elif selected_count > 1:
             source_names = [db.db_name for db in selected_databases]
-            result = self.new_multiple_replication_dialog.run(self._couchdb, source_names)
+            # TODO: review
+            result = self.new_multiple_replication_dialog.run(self._model.couchdb, source_names)
             if result == Gtk.ResponseType.OK:
                 replications = self.new_multiple_replication_dialog.replications
 
@@ -491,7 +464,8 @@ class MainWindow:
 
     def on_menuitem_databases_replication_remote(self, menu):
         replications = None
-        result = self.remote_replication_dialog.run(self._couchdb)
+        # TODO: review
+        result = self.remote_replication_dialog.run(self._model.couchdb)
         if result == Gtk.ResponseType.OK:
             replications = self.remote_replication_dialog.replications
 
@@ -501,7 +475,7 @@ class MainWindow:
                 self.queue_replication(repl)
 
     def on_menu_databases_show(self, menu):
-        connected = self._couchdb is not None
+        connected = self._model is not None
         selected_databases = self.selected_databases
         single_row = len(selected_databases) == 1
         multiple_rows = len(selected_databases) > 1
@@ -547,7 +521,7 @@ class MainWindow:
         self.close()
 
     def on_treeview_databases_drag_data_received(self, widget, drag_context, x, y, data, info, time):
-        if self._couchdb and info == 0:
+        if self._model and info == 0:
             text = data.get_text()
             urls = text.split('\n')
             for url in urls:
@@ -555,7 +529,8 @@ class MainWindow:
                     u = urlparse(url)
                     if not (u.hostname == self.server and u.port == self.port):
                         target = u.path[1::]
-                        repl = Replication(self._couchdb, url, target, continuous=False, create=True)
+                        # TODO: review
+                        repl = Replication(self._model.couchdb, url, target, continuous=False, create=True)
                         self.queue_replication(repl)
             self.checkmenuitem_view_new_replication_window.set_active(True)
 
@@ -564,7 +539,7 @@ class MainWindow:
         selected_count = len(selected_databases)
         if selected_count > 0:
             text = ''
-            url = self._couchdb.get_url()
+            url = self._model.url
             for db in selected_databases:
                 if len(text) > 0:
                     text += '\n'
@@ -623,15 +598,6 @@ class MainWindow:
             'continuous',
             lambda t: time.strftime('%H:%M:%S', time.gmtime(t.started_on)),
             lambda t: time.strftime('%H:%M:%S', time.gmtime(t.updated_on))])
-
-    @staticmethod
-    def append_field(source, field, name='NewType'):
-        fields = [key for key in source._fields]
-        fields.append(field[0])
-        NewType = namedtuple(name, fields)
-        values = [value for value in iter(source)]
-        values.append(field[1])
-        return NewType(*values)
 
     @staticmethod
     def get_default_window_title(window):
