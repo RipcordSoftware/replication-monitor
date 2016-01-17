@@ -43,6 +43,9 @@ class CouchDB:
             self._username = username
             self._password = password
 
+        def __eq__(self, other):
+            return type(self) == type(other) and self._username == other.username and self._password == other.password
+
         @property
         def username(self):
             return self._username
@@ -92,6 +95,8 @@ class CouchDB:
         @property
         def is_json(self):
             return self._content_type.find('application/json') == 0
+
+    _auth_cache = {}
 
     def __init__(self, host, port, secure, get_credentials=None, auth=None, signature=None):
         self._host = host
@@ -253,14 +258,25 @@ class CouchDB:
         if (response.status == 401 or response.status == 403) and \
                 callable(self._get_credentials) and not self._auth_active:
             try:
-                self._auth_active = True
                 server_url = self.get_url()
-                creds = self._get_credentials(server_url)
-                self._auth_active = False
 
-                if creds:
-                    self._auth = self._Authentication(creds.username, creds.password)
-                    return self._make_request(uri, method, body, content_type)
+                auth = self._auth_cache.get(server_url, None)
+                if auth and not auth == self._auth:
+                    self._auth = auth
+                else:
+                    self._auth_cache.pop(server_url, None)
+                    self._auth = None
+
+                    self._auth_active = True
+                    creds = self._get_credentials(server_url)
+                    self._auth_active = False
+                    if creds:
+                        self._auth = self._Authentication(creds.username, creds.password)
+
+                if self._auth:
+                    result = self._make_request(uri, method, body, content_type)
+                    self._auth_cache[server_url] = self._auth
+                    return result
             finally:
                 self._auth_active = False
 
