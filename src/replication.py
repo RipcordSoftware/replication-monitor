@@ -65,6 +65,9 @@ class Replication:
             source = source_name
             target = target_name
 
+        # asking for the replicator database will force the user to give the right auth credentials
+        self._couchdb.get_docs('_replicator', limit=0)
+
         if self._drop_first:
             try:
                 self._couchdb.delete_database(target_name)
