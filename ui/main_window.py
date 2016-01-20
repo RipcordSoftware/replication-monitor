@@ -1,7 +1,6 @@
 import time
 import threading
 import webbrowser
-import re
 import collections
 from urllib.parse import urlparse
 
@@ -22,6 +21,7 @@ from ui.new_replications_window import NewReplicationsWindow
 from ui.about_dialog import AboutDialog
 
 from ui.main_window_model import MainWindowModel
+from ui.databases_model import DatabasesModel
 
 
 class MainWindow:
@@ -51,7 +51,7 @@ class MainWindow:
         self.remote_replication_dialog = RemoteReplicationDialog(builder)
         self.about_dialog = AboutDialog(builder)
 
-        self._database_model = Gtk.ListStore(str, int, int, int, str, int, object)
+        self._database_model = DatabasesModel.Sorted()
         self.treeview_databases.set_model(self._database_model)
         self.treeview_databases.enable_model_drag_source(self.DRAG_BUTTON_MASK, self.DRAG_TARGETS, self.DRAG_ACTION)
         self.treeview_databases.enable_model_drag_dest(self.DRAG_TARGETS, self.DRAG_ACTION)
@@ -68,8 +68,6 @@ class MainWindow:
                 item_y = ModelMapper.get_item_instance_from_model(m, y)
                 return compare_strings(getattr(item_x, name), getattr(item_y, name))
             return callback
-
-        self._database_model.set_sort_func(0, compare_string_cols('db_name'))
 
         self._replication_tasks_model.set_sort_func(0, compare_string_cols('source'))
         self._replication_tasks_model.set_sort_func(1, compare_string_cols('target'))
@@ -152,18 +150,16 @@ class MainWindow:
 
             itr = model.get_iter_first()
             while itr is not None:
-                db = ModelMapper.get_item_instance_from_model(model, itr)
+                db = model[itr]
                 old_databases[db.db_name] = model.get_path(itr)
                 itr = model.iter_next(itr)
 
             for db in databases:
-                row = MainWindow.new_database_row(db)
-
                 i = old_databases.pop(db.db_name, None)
                 if i is not None:
-                    model[i] = row
+                    model[i] = db
                 else:
-                    new_databases.append(row)
+                    new_databases.append(db)
 
             deleted_database_paths = [path for path in old_databases.values()]
             for path in reversed(deleted_database_paths):
@@ -287,8 +283,7 @@ class MainWindow:
         (model, path_list) = self.treeview_databases.get_selection().get_selected_rows()
         if path_list and len(path_list):
             for path in path_list:
-                row = model[path]
-                db = ModelMapper.get_item_instance(row)
+                db = model[path]
                 rows.append(self.SelectedDatabaseRow(path, db))
         return rows
 
@@ -345,8 +340,7 @@ class MainWindow:
             def request():
                 self._model.create_database(name)
                 db = self._model.get_database(name)
-                row = MainWindow.new_database_row(db)
-                self._database_model.append(row)
+                self._database_model.append(db)
             self.couchdb_request(request)
 
     def on_menu_databases_delete(self, menu):
@@ -354,7 +348,7 @@ class MainWindow:
         if len(selected_database_rows) > 0:
             result = self.delete_databases_dialog.run(selected_database_rows)
             if result == Gtk.ResponseType.OK:
-                model = self.treeview_databases.get_model()
+                model = self._database_model
 
                 def request():
                     for row in reversed(self.delete_databases_dialog.selected_database_rows):
@@ -563,31 +557,6 @@ class MainWindow:
     # endregion
 
     # region Static methods
-    @staticmethod
-    def get_update_sequence(val):
-        seq = 0
-
-        if isinstance(val, str):
-            m = re.search('^\s*(\d+)', val)
-            if m:
-                groups = m.groups()
-                if len(groups) == 1:
-                    seq = int(groups[0])
-        elif isinstance(val, int):
-            seq = val
-
-        return seq
-
-    @staticmethod
-    def new_database_row(db):
-        return ModelMapper(db, [
-            'db_name',
-            'doc_count',
-            lambda i: MainWindow.get_update_sequence(i.update_seq),
-            lambda i: i.disk_size / 1024 / 1024,
-            lambda i: 'Yes' if i.compact_running else 'No',
-            'revs_limit'])
-
     @staticmethod
     def new_replication_task_row(task):
         return ModelMapper(task, [
