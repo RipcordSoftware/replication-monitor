@@ -56,7 +56,7 @@ class DatabasesModel(GObject.Object, Gtk.TreeModel):
             self.ColDefinition('db_name', str),
             self.ColDefinition('doc_count', int),
             self.ColDefinition(lambda row: self._get_update_sequence(row.update_seq), int),
-            self.ColDefinition(lambda row: row.disk_size / 1024 / 1024, int),
+            self.ColDefinition(lambda row: int(round(row.disk_size / 1024 / 1024)), int),
             self.ColDefinition(lambda row: 'Yes' if row.compact_running else 'No', str),
             self.ColDefinition('revs_limit', int)
         )
