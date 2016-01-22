@@ -524,7 +524,7 @@ class MainWindow:
                     if not (u.hostname == self.server and u.port == self.port):
                         target = u.path[1::]
                         # TODO: review
-                        repl = Replication(self._model.couchdb, url, target, continuous=False, create=True)
+                        repl = Replication(self._model.couchdb.clone(), url, target, continuous=False, create=True)
                         self.queue_replication(repl)
             self.checkmenuitem_view_new_replication_window.set_active(True)
 
