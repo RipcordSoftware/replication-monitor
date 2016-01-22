@@ -2,6 +2,7 @@ import time
 import threading
 import webbrowser
 import collections
+import re
 from urllib.parse import urlparse
 
 from gi.repository import Gtk, Gdk
@@ -516,17 +517,21 @@ class MainWindow:
 
     def on_treeview_databases_drag_data_received(self, widget, drag_context, x, y, data, info, time):
         if self._model and info == 0:
+            repl_count = 0
+            this_url = self._model.couchdb.get_url()
             text = data.get_text()
             urls = text.split('\n')
             for url in urls:
-                if url.find('http') == 0:
+                if re.search('^https?://', url) is not None and url.find(this_url) != 0:
                     u = urlparse(url)
                     if not (u.hostname == self.server and u.port == self.port):
                         target = u.path[1::]
                         # TODO: review
                         repl = Replication(self._model.couchdb.clone(), url, target, continuous=False, create=True)
                         self.queue_replication(repl)
-            self.checkmenuitem_view_new_replication_window.set_active(True)
+                        repl_count += 1
+            if repl_count:
+                self.checkmenuitem_view_new_replication_window.set_active(True)
 
     def on_treeview_databases_drag_data_get(self, widget, drag_context, data, info, time):
         selected_databases = self.selected_databases
