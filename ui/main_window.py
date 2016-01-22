@@ -280,10 +280,10 @@ class MainWindow:
     @property
     def selected_database_rows(self):
         rows = []
-        (model, path_list) = self.treeview_databases.get_selection().get_selected_rows()
+        (_, path_list) = self.treeview_databases.get_selection().get_selected_rows()
         if path_list and len(path_list):
             for path in path_list:
-                db = model[path]
+                db = self._database_model[path]
                 rows.append(self.SelectedDatabaseRow(path, db))
         return rows
 

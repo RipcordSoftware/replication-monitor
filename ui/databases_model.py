@@ -24,20 +24,26 @@ class DatabasesModel(GObject.Object, Gtk.TreeModel):
                 return -1 if a < b else 1 if a > b else 0
             return compare_strings if self.type == str else None
 
-    class Sorted(Gtk.TreeModelSort):
+    class Sorted(Gtk.TreeModelSort, Gtk.TreeDragDest, Gtk.TreeDragSource):
         def __init__(self, child_model=None):
             child_model = DatabasesModel() if child_model is None else child_model
             super().__init__(child_model)
             self._attach_sort_functions(child_model)
 
+        def __getitem__(self, item):
+            return self.get_model()[item]
+
+        def __setitem__(self, key, value):
+            self.get_model()[key] = value
+
         def append(self, row):
-            self.get_model().append(row)
+            return self.get_model().append(row)
 
         def remove(self, it):
-            self.get_model().remove(it)
+            return self.get_model().remove(it)
 
         def clear(self):
-            self.get_model().clear()
+            return self.get_model().clear()
 
         def _attach_sort_functions(self, child_model):
             for (i, item) in enumerate(child_model.cols):
@@ -49,6 +55,33 @@ class DatabasesModel(GObject.Object, Gtk.TreeModel):
                             return compare(getattr(x, name), getattr(y, name))
                         return callback
                     super().set_sort_func(i, compare_cols(item.compare, item.name))
+
+        # region Event overrides
+        def do_drag_data_delete(self, path):
+            do_drag_data_delete = getattr(super().get_model(), 'do_drag_data_delete', None)
+            return do_drag_data_delete(path) if callable(do_drag_data_delete) else False
+
+        def do_drag_data_get(self, path, selection):
+            do_drag_data_get = getattr(super().get_model(), 'do_drag_data_get', None)
+            if callable(do_drag_data_get):
+                do_drag_data_get(path, selection)
+
+        def do_row_draggable(self, path):
+            do_row_draggable = getattr(super().get_model(), 'do_row_draggable', None)
+            return do_row_draggable(path) if callable(do_row_draggable) else False
+
+        def get_iter_first(self):
+            return self.get_model().get_iter_first()
+
+        def get_iter(self, path):
+            return self.get_model().get_iter(path)
+
+        def iter_next(self, it):
+            return self.get_model().iter_next(it)
+
+        def get_path(self, it):
+            return self.get_model().get_path(it)
+        # endregion
 
     def __init__(self):
         super().__init__()
@@ -63,45 +96,30 @@ class DatabasesModel(GObject.Object, Gtk.TreeModel):
         self._data = []
 
     def __getitem__(self, item):
-        index = item
-        if isinstance(item, str):
-            index = int(item)
-        elif isinstance(item, Gtk.TreePath):
-            index = item.get_indices()[0]
-        elif isinstance(item, Gtk.TreeIter):
-            index = item.user_data
+        index = self._get_index(item)
         return self._data[index]
 
     def __setitem__(self, key, value):
-        index = key
-        if isinstance(key, str):
-            index = int(key)
-        elif isinstance(key, Gtk.TreePath):
-            index = key.get_indices()[0]
-        elif isinstance(key, Gtk.TreeIter):
-            index = key.user_data
+        index = self._get_index(key)
         self._data[index] = value
 
-        it = Gtk.TreeIter()
-        it.user_data = index
+        it = self._get_iter(index)
         super().emit('row-changed', self.do_get_path(it), it)
 
     def append(self, row):
         self._data.append(row)
-        it = Gtk.TreeIter()
-        it.user_data = len(self._data) - 1
+        it = self._get_iter(len(self._data) - 1)
         super().row_inserted(self.do_get_path(it), it)
 
     def remove(self, it):
         super().row_deleted(self.do_get_path(it))
-        index = it.user_data
-        self._data.remove(index)
+        index = self._get_index(it)
+        self._data.pop(index)
 
     def clear(self):
-        it = Gtk.TreeIter()
         for index in range(len(self._data) - 1, -1, -1):
-            it.user_data = index
-            super().row_deleted(self.do_get_path(it))
+            path = self._get_path(index)
+            super().row_deleted(path)
         self._data.clear()
 
     @property
@@ -122,21 +140,26 @@ class DatabasesModel(GObject.Object, Gtk.TreeModel):
     def do_get_column_type(self, n):
         return self._cols[n].type
 
+    def get_iter_first(self):
+        it = None
+        if len(self._data) > 0:
+            it = self._get_iter(0)
+        return it
+
     def do_get_iter(self, path):
         # Return False and an empty iter when out of range
         index = path.get_indices()[0]
         if index < 0 or index >= len(self._data):
             return False, None
 
-        it = Gtk.TreeIter()
-        it.user_data = index
+        it = self._get_iter(index)
         return True, it
 
     def do_get_path(self, it):
-        return Gtk.TreePath([it.user_data])
+        return self._get_path(it)
 
     def do_get_value(self, it, column):
-        index = it.user_data
+        index = self._get_index(it)
         row = self._data[index]
         name = self._cols[column].name
         func = name if callable(name) else None
@@ -148,7 +171,7 @@ class DatabasesModel(GObject.Object, Gtk.TreeModel):
 
     def do_iter_next(self, it):
         # Return False if there is not a next item
-        next = it.user_data + 1
+        next = self._get_index(it) + 1
         if next >= len(self._data):
             return False
 
@@ -157,7 +180,7 @@ class DatabasesModel(GObject.Object, Gtk.TreeModel):
         return True
 
     def do_iter_previous(self, it):
-        prev = it.user_data - 1
+        prev = self._get_index(it) - 1
         if prev < 0:
             return False
 
@@ -167,8 +190,7 @@ class DatabasesModel(GObject.Object, Gtk.TreeModel):
     def do_iter_children(self, parent):
         # If parent is None return the first item
         if parent is None:
-            it = Gtk.TreeIter()
-            it.user_data = 0
+            it = self._get_iter(0)
             return True, it
         return False, None
 
@@ -186,12 +208,20 @@ class DatabasesModel(GObject.Object, Gtk.TreeModel):
             return False, None
         elif parent is None:
             # If parent is None, return the nth iter
-            it = Gtk.TreeIter()
-            it.user_data = n
+            it = self._get_iter(n)
             return True, it
 
     def do_iter_parent(self, child):
         return False, None
+
+    def do_drag_data_delete(self):
+        return False
+
+    def do_drag_data_get(self, path, selection):
+        pass
+
+    def do_row_draggable(self, path):
+        return True
     # endregion
 
     # region Static methods
@@ -209,4 +239,37 @@ class DatabasesModel(GObject.Object, Gtk.TreeModel):
             seq = val
 
         return seq
+
+    @staticmethod
+    def _get_index(value):
+        index = value
+        if isinstance(value, str):
+            index = int(value)
+        elif isinstance(value, Gtk.TreePath):
+            index = value.get_indices()[0]
+        elif isinstance(value, Gtk.TreeIter):
+            index = value.user_data
+        return index
+
+    @staticmethod
+    def _get_iter(value):
+        it = Gtk.TreeIter()
+        if isinstance(value, str):
+            it.user_data = int(value)
+        elif isinstance(value, Gtk.TreePath):
+            it.user_data = value.get_indices()[0]
+        elif isinstance(value, int):
+            it.user_data = value
+        return it
+
+    @staticmethod
+    def _get_path(value):
+        path = None
+        if isinstance(value, str):
+            path = Gtk.TreePath((int(str),))
+        elif isinstance(value, Gtk.TreeIter):
+            path = Gtk.TreePath((DatabasesModel._get_index(value),))
+        elif isinstance(value, int):
+            path = Gtk.TreePath((value,))
+        return path
     # endregion
