@@ -226,7 +226,7 @@ class CouchDB:
     def create_replication(self, source, target, create_target=False, continuous=False):
         job = {'source': source, 'target': target, 'create_target': create_target, 'continuous': continuous}
 
-        if self._auth is not None:
+        if create_target:
             session = self.get_session()
             user_ctx = session.userCtx
             job['user_ctx'] = {'name': user_ctx.name, 'roles': user_ctx.roles}
