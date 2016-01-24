@@ -1,4 +1,3 @@
-import time
 import threading
 import webbrowser
 import collections
@@ -7,7 +6,6 @@ from urllib.parse import urlparse
 
 from gi.repository import Gtk, Gdk
 
-from src.model_mapper import ModelMapper
 from src.gtk_helper import GtkHelper
 from src.keyring import Keyring
 from src.replication import Replication
@@ -22,8 +20,9 @@ from ui.new_replications_window import NewReplicationsWindow
 from ui.about_dialog import AboutDialog
 
 from ui.main_window_model import MainWindowModel
-from ui.databases_model import DatabasesModel
 from ui.listview_model import ListViewModel
+from ui.databases_model import DatabasesModel
+from ui.replication_tasks_model import ReplicationTasksModel
 
 class MainWindow:
     SelectedDatabaseRow = collections.namedtuple('SelectedDatabaseRow', 'index db')
@@ -57,22 +56,8 @@ class MainWindow:
         self.treeview_databases.enable_model_drag_source(self.DRAG_BUTTON_MASK, self.DRAG_TARGETS, self.DRAG_ACTION)
         self.treeview_databases.enable_model_drag_dest(self.DRAG_TARGETS, self.DRAG_ACTION)
 
-        self._replication_tasks_model = Gtk.ListStore(str, str, str, int, bool, str, str, object)
+        self._replication_tasks_model = ListViewModel.Sorted(ReplicationTasksModel())
         self.treeview_tasks.set_model(self._replication_tasks_model)
-
-        def compare_string_cols(name):
-            def compare_strings(a, b):
-                return -1 if a < b else 1 if a > b else 0
-
-            def callback(m, x, y, _):
-                item_x = ModelMapper.get_item_instance_from_model(m, x)
-                item_y = ModelMapper.get_item_instance_from_model(m, y)
-                return compare_strings(getattr(item_x, name), getattr(item_y, name))
-            return callback
-
-        self._replication_tasks_model.set_sort_func(0, compare_string_cols('source'))
-        self._replication_tasks_model.set_sort_func(1, compare_string_cols('target'))
-        self._replication_tasks_model.set_sort_func(2, compare_string_cols('state'))
 
         self._replication_queue = NewReplicationQueue(self.report_error)
 
@@ -182,18 +167,16 @@ class MainWindow:
 
             itr = model.get_iter_first()
             while itr is not None:
-                task = ModelMapper.get_item_instance_from_model(model, itr)
+                task = model[itr]
                 old_tasks[task.replication_id] = model.get_path(itr)
                 itr = model.iter_next(itr)
 
             for task in tasks:
-                row = MainWindow.new_replication_task_row(task)
-
                 i = old_tasks.pop(task.replication_id, None)
                 if i is not None:
-                    model[i] = row
+                    model[i] = task
                 else:
-                    new_tasks.append(row)
+                    new_tasks.append(task)
 
             deleted_replication_task_paths = [path for path in old_tasks.values()]
             for path in sorted(deleted_replication_task_paths, reverse=True):
@@ -563,19 +546,7 @@ class MainWindow:
 
     # region Static methods
     @staticmethod
-    def new_replication_task_row(task):
-        return ModelMapper(task, [
-            'source',
-            'target',
-            None,
-            lambda t: getattr(t, 'progress', None),
-            'continuous',
-            lambda t: time.strftime('%H:%M:%S', time.gmtime(t.started_on)),
-            lambda t: time.strftime('%H:%M:%S', time.gmtime(t.updated_on))])
-
-    @staticmethod
     def get_default_window_title(window):
         title = window.get_title().split('-')[0].rstrip(' ')
         return title
 # endregion
-
