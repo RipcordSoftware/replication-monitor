@@ -23,7 +23,7 @@ from ui.about_dialog import AboutDialog
 
 from ui.main_window_model import MainWindowModel
 from ui.databases_model import DatabasesModel
-
+from ui.listview_model import ListViewModel
 
 class MainWindow:
     SelectedDatabaseRow = collections.namedtuple('SelectedDatabaseRow', 'index db')
@@ -52,8 +52,8 @@ class MainWindow:
         self.remote_replication_dialog = RemoteReplicationDialog(builder)
         self.about_dialog = AboutDialog(builder)
 
-        self._database_model = DatabasesModel.Sorted()
-        self.treeview_databases.set_model(self._database_model)
+        self._databases_model = ListViewModel.Sorted(DatabasesModel())
+        self.treeview_databases.set_model(self._databases_model)
         self.treeview_databases.enable_model_drag_source(self.DRAG_BUTTON_MASK, self.DRAG_TARGETS, self.DRAG_ACTION)
         self.treeview_databases.enable_model_drag_dest(self.DRAG_TARGETS, self.DRAG_ACTION)
 
@@ -147,7 +147,7 @@ class MainWindow:
         def func():
             old_databases = {}
             new_databases = []
-            model = self._database_model
+            model = self._databases_model
 
             itr = model.get_iter_first()
             while itr is not None:
@@ -284,7 +284,7 @@ class MainWindow:
         (_, path_list) = self.treeview_databases.get_selection().get_selected_rows()
         if path_list and len(path_list):
             for path in path_list:
-                db = self._database_model[path]
+                db = self._databases_model[path]
                 rows.append(self.SelectedDatabaseRow(path, db))
         return rows
 
@@ -299,7 +299,7 @@ class MainWindow:
         self._model = None
         self.infobar_warnings.hide()
         self._replication_tasks_model.clear()
-        self._database_model.clear()
+        self._databases_model.clear()
         self.reset_statusbar()
         self.reset_window_titles()
 
@@ -341,7 +341,7 @@ class MainWindow:
             def request():
                 self._model.create_database(name)
                 db = self._model.get_database(name)
-                self._database_model.append(db)
+                self._databases_model.append(db)
             self.couchdb_request(request)
 
     def on_menu_databases_delete(self, menu):
@@ -349,7 +349,7 @@ class MainWindow:
         if len(selected_database_rows) > 0:
             result = self.delete_databases_dialog.run(selected_database_rows)
             if result == Gtk.ResponseType.OK:
-                model = self._database_model
+                model = self._databases_model
 
                 def request():
                     for row in reversed(self.delete_databases_dialog.selected_database_rows):
