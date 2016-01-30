@@ -19,10 +19,12 @@ from ui.remote_replication_dialog import RemoteReplicationDialog
 from ui.new_replications_window import NewReplicationsWindow
 from ui.about_dialog import AboutDialog
 
+from ui.main_window_controller import MainWindowController
+
 from ui.main_window_model import MainWindowModel
-from ui.listview_model import ListViewModel
-from ui.databases_model import DatabasesModel
-from ui.replication_tasks_model import ReplicationTasksModel
+
+from ui.statusbar_viewmodel import StatusBarViewModel
+
 
 class MainWindow:
     SelectedDatabaseRow = collections.namedtuple('SelectedDatabaseRow', 'index db')
@@ -51,12 +53,14 @@ class MainWindow:
         self.remote_replication_dialog = RemoteReplicationDialog(builder)
         self.about_dialog = AboutDialog(builder)
 
-        self._databases_model = ListViewModel.Sorted(DatabasesModel())
+        self._controller = MainWindowController()
+
+        self._databases_model = self._controller.databases_model
         self.treeview_databases.set_model(self._databases_model)
         self.treeview_databases.enable_model_drag_source(self.DRAG_BUTTON_MASK, self.DRAG_TARGETS, self.DRAG_ACTION)
         self.treeview_databases.enable_model_drag_dest(self.DRAG_TARGETS, self.DRAG_ACTION)
 
-        self._replication_tasks_model = ListViewModel.Sorted(ReplicationTasksModel())
+        self._replication_tasks_model = self._controller.replication_tasks_model
         self.treeview_tasks.set_model(self._replication_tasks_model)
 
         self._replication_queue = NewReplicationQueue(self.report_error)
@@ -65,7 +69,10 @@ class MainWindow:
         self._auto_update_thread.daemon = True
         self._auto_update_thread.start()
 
-        self.reset_statusbar()
+        self._statusbar = StatusBarViewModel(self.statusbar, self.spinner_auto_update)
+        del self.statusbar
+        del self.spinner_auto_update
+        self._statusbar.reset()
 
         self._win.show_all()
 
@@ -73,13 +80,13 @@ class MainWindow:
         while not self._auto_update_exit.wait(5):
             if self._model and self._auto_update:
                 try:
-                    GtkHelper.idle(lambda: self.spinner_auto_update.set_visible(True))
-                    self.update_replication_tasks()
-                    self.update_databases()
+                    self._statusbar.show_busy_spinner(True)
+                    self._controller.update_replication_tasks(self._model.replication_tasks)
+                    self._controller.update_databases(self._model.databases)
                 except Exception as e:
                     self.report_error(e)
                 finally:
-                    GtkHelper.idle(lambda: self.spinner_auto_update.set_visible(False))
+                    self._statusbar.show_busy_spinner(False)
 
     # TODO: rename as model_request
     def couchdb_request(self, func):
@@ -99,95 +106,6 @@ class MainWindow:
             thread = threading.Thread(target=task)
             thread.start()
 
-    def reset_statusbar(self):
-        self.statusbar.remove_all(0)
-        self.statusbar.push(0, 'Not Connected')
-
-    def update_statusbar(self):
-        def func():
-            try:
-                signature = self._model.signature
-                server = self._model.database_type.name + ' ' + str(signature.version)
-
-                auth_details = 'Admin Party'
-                session = self._model.session
-                user_ctx = session.userCtx
-                if user_ctx and user_ctx.name:
-                    auth_details = user_ctx.name
-                    roles = ''
-                    for role in user_ctx.roles:
-                        roles += ', ' + role if len(roles) > 0 else role
-                    auth_details += ' [' + roles + ']'
-
-                status = server + ' - ' + auth_details
-                self.statusbar.push(0, status)
-            except Exception as e:
-                GtkHelper.invoke(self.reset_statusbar)
-        thread = threading.Thread(target=func)
-        thread.run()
-
-    def update_databases(self):
-        databases = self._model.databases
-
-        def func():
-            old_databases = {}
-            new_databases = []
-            model = self._databases_model
-
-            itr = model.get_iter_first()
-            while itr is not None:
-                db = model[itr]
-                old_databases[db.db_name] = model.get_path(itr)
-                itr = model.iter_next(itr)
-
-            for db in databases:
-                i = old_databases.pop(db.db_name, None)
-                if i is not None:
-                    model[i] = db
-                else:
-                    new_databases.append(db)
-
-            deleted_database_paths = [path for path in old_databases.values()]
-            for path in reversed(deleted_database_paths):
-                itr = model.get_iter(path)
-                model.remove(itr)
-
-            for db in new_databases:
-                model.append(db)
-
-        GtkHelper.invoke(func, async=False)
-
-    def update_replication_tasks(self):
-        tasks = self._model.replication_tasks
-
-        def func():
-            old_tasks = {}
-            new_tasks = []
-            model = self._replication_tasks_model
-
-            itr = model.get_iter_first()
-            while itr is not None:
-                task = model[itr]
-                old_tasks[task.replication_id] = model.get_path(itr)
-                itr = model.iter_next(itr)
-
-            for task in tasks:
-                i = old_tasks.pop(task.replication_id, None)
-                if i is not None:
-                    model[i] = task
-                else:
-                    new_tasks.append(task)
-
-            deleted_replication_task_paths = [path for path in old_tasks.values()]
-            for path in sorted(deleted_replication_task_paths, reverse=True):
-                itr = model.get_iter(path)
-                model.remove(itr)
-
-            for task in new_tasks:
-                model.append(task)
-
-        GtkHelper.invoke(func, async=False)
-
     def get_credentials(self, server_url):
         def func():
             credentials = Keyring.get_auth(server_url)
@@ -199,9 +117,7 @@ class MainWindow:
                 result = self.credentials_dialog.credentials
                 if self.credentials_dialog.save_credentials:
                     Keyring.set_auth(server_url, result.username, result.password)
-
-            GtkHelper.idle(self.update_statusbar)
-
+            self._statusbar.update(self._model)
             return result
 
         return GtkHelper.invoke(func, async=False)
@@ -283,16 +199,16 @@ class MainWindow:
         self.infobar_warnings.hide()
         self._replication_tasks_model.clear()
         self._databases_model.clear()
-        self.reset_statusbar()
+        self._statusbar.reset()
         self.reset_window_titles()
 
         try:
             self._model = MainWindowModel(self.server, self.port, self.secure, self.get_credentials)
 
             def request():
-                self.update_databases()
-                self.update_replication_tasks()
-                self.update_statusbar()
+                self._controller.update_databases(self._model.databases)
+                self._controller.update_replication_tasks(self._model.replication_tasks)
+                self._statusbar.update(self._model)
                 self.update_window_titles()
 
             self.couchdb_request(request)
@@ -303,7 +219,7 @@ class MainWindow:
         self.infobar_warnings.hide()
 
     def on_menu_databases_refresh(self, menu):
-        self.update_databases()
+        self._controller.update_databases(self._model.databases)
 
     def on_comboboxtext_port_changed(self, widget):
         self.checkbutton_secure.set_sensitive(self.port != '443')
