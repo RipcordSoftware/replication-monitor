@@ -8,11 +8,10 @@ class StatusBarViewModel:
         self._statusbar = statusbar
         self._busy_spinner = busy_spinner
 
+    @GtkHelper.invoke_func
     def reset(self):
-        def func():
-            self._statusbar.remove_all(0)
-            self._statusbar.push(0, 'Not Connected')
-        GtkHelper.invoke(func)
+        self._statusbar.remove_all(0)
+        self._statusbar.push(0, 'Not Connected')
 
     def update(self, model):
         def func():
@@ -38,5 +37,6 @@ class StatusBarViewModel:
         thread = threading.Thread(target=func)
         thread.run()
 
+    @GtkHelper.invoke_func
     def show_busy_spinner(self, show):
-        GtkHelper.invoke(lambda: self._busy_spinner.set_visible(show))
+        self._busy_spinner.set_visible(show)

@@ -27,6 +27,7 @@ from ui.main_window_model import MainWindowModel
 
 from ui.view_models.statusbar_view_model import StatusBarViewModel
 from ui.view_models.infobar_warnings_view_model import InfobarWarningsViewModel
+from ui.view_models.connection_bar_view_model import ConnectionBarViewModel
 
 
 class MainWindow:
@@ -71,6 +72,11 @@ class MainWindow:
         self._auto_update_thread = threading.Thread(target=self.auto_update_handler)
         self._auto_update_thread.daemon = True
         self._auto_update_thread.start()
+
+        self._connection_bar = ConnectionBarViewModel(self.entry_server, self.comboboxtext_port, self.checkbutton_secure)
+        del self.entry_server
+        del self.comboboxtext_port
+        del self.checkbutton_secure
 
         self._statusbar = StatusBarViewModel(self.statusbar, self.spinner_auto_update)
         del self.statusbar
@@ -169,16 +175,15 @@ class MainWindow:
     # region Properties
     @property
     def server(self):
-        return self.entry_server.get_text()
+        return self._connection_bar.server
 
     @property
     def port(self):
-        return self.comboboxtext_port.get_active_text()
+        return self._connection_bar.port
 
     @property
     def secure(self):
-        secure = self.checkbutton_secure.get_active()
-        return secure or self.port == '443'
+        return self._connection_bar.secure
 
     @property
     def selected_database_rows(self):
@@ -225,7 +230,7 @@ class MainWindow:
         self._controller.update_databases(self._model.databases)
 
     def on_comboboxtext_port_changed(self, widget):
-        self.checkbutton_secure.set_sensitive(self.port != '443')
+        self._connection_bar.on_comboboxtext_port_changed()
 
     def on_database_button_press_event(self, menu, event):
         if event.type == Gdk.EventType.BUTTON_PRESS and event.button == 3:

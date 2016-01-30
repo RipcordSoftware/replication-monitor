@@ -7,24 +7,16 @@ class InfobarWarningsViewModel:
         self._message = message
 
     @property
+    @GtkHelper.invoke_func_sync
     def message(self):
-        value = None
-
-        def func():
-            nonlocal value
-            value = self._message.get_text()
-        GtkHelper.invoke(func, False)
-        return value
+        return self._message.get_text()
 
     @message.setter
+    @GtkHelper.invoke_func
     def message(self, value):
-        def func():
-            self._message.set_text(value)
-            self.show(True)
-        GtkHelper.invoke(func)
+        self._message.set_text(value)
+        self.show(True)
 
+    @GtkHelper.invoke_func
     def show(self, show):
-        if show:
-            GtkHelper.invoke(self._infobar.show)
-        else:
-            GtkHelper.invoke(self._infobar.hide)
+        self._infobar.show() if show else self._infobar.hide()

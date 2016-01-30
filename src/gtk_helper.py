@@ -54,6 +54,30 @@ class GtkHelper:
         GObject.idle_add(task)
 
     @staticmethod
+    def invoke_func(func):
+        """
+        A decorator for functions which should be run on the main Gtk thread. The function is
+        executed asynchronously
+        :param func: The callable to run on the UI thread
+        :return: nothing
+        """
+        def inner(*args, **kwargs):
+            GtkHelper.invoke(lambda: func(*args, **kwargs))
+        return inner
+
+    @staticmethod
+    def invoke_func_sync(func):
+        """
+        A decorator for functions which should be run on the main Gtk thread. If run from a non-UI
+        thread the caller will block until the function completes
+        :param func: The callable to run on the UI thread
+        :return: The value returned by the callable
+        """
+        def inner(*args, **kwargs):
+            return GtkHelper.invoke(lambda: func(*args, **kwargs), False)
+        return inner
+
+    @staticmethod
     def run_dialog(win, message_type, buttons_type, msg):
         dialog = Gtk.MessageDialog(win, 0, message_type, buttons_type, msg)
         response = dialog.run()
