@@ -9,20 +9,21 @@ from gi.repository import Gtk, Gdk
 from src.gtk_helper import GtkHelper
 from src.keyring import Keyring
 from src.replication import Replication
+
 from src.new_replication_queue import NewReplicationQueue
-from ui.credentials_dialog import CredentialsDialog
-from ui.new_database_dialog import NewDatabaseDialog
-from ui.delete_databases_dialog import DeleteDatabasesDialog
-from ui.new_single_replication_dialog import NewSingleReplicationDialog
-from ui.new_multiple_replications_dialog import NewMultipleReplicationDialog
-from ui.remote_replication_dialog import RemoteReplicationDialog
+from ui.dialogs.credentials_dialog import CredentialsDialog
+from ui.dialogs.new_database_dialog import NewDatabaseDialog
+from ui.dialogs.delete_databases_dialog import DeleteDatabasesDialog
+from ui.dialogs.new_single_replication_dialog import NewSingleReplicationDialog
+from ui.dialogs.new_multiple_replications_dialog import NewMultipleReplicationDialog
+from ui.dialogs.remote_replication_dialog import RemoteReplicationDialog
+from ui.dialogs.about_dialog import AboutDialog
+
 from ui.new_replications_window import NewReplicationsWindow
-from ui.about_dialog import AboutDialog
 
 from ui.main_window_controller import MainWindowController
 
 from ui.main_window_model import MainWindowModel
-
 from ui.statusbar_viewmodel import StatusBarViewModel
 
 
