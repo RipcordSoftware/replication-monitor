@@ -24,8 +24,9 @@ from ui.new_replications_window import NewReplicationsWindow
 from ui.main_window_controller import MainWindowController
 
 from ui.main_window_model import MainWindowModel
-from ui.statusbar_viewmodel import StatusBarViewModel
 
+from ui.statusbar_viewmodel import StatusBarViewModel
+from ui.infobar_warnings_view_model import InfobarWarningsViewModel
 
 class MainWindow:
     SelectedDatabaseRow = collections.namedtuple('SelectedDatabaseRow', 'index db')
@@ -74,6 +75,10 @@ class MainWindow:
         del self.statusbar
         del self.spinner_auto_update
         self._statusbar.reset()
+
+        self._infobar_warnings = InfobarWarningsViewModel(self.infobar_warnings, self.infobar_warnings_message)
+        del self.infobar_warnings
+        del self.infobar_warnings_message
 
         self._win.show_all()
 
@@ -129,11 +134,7 @@ class MainWindow:
         Gtk.main_quit()
 
     def report_error(self, err):
-        def func():
-            text = str(err)
-            self.infobar_warnings_message.set_text(text)
-            self.infobar_warnings.show()
-        GtkHelper.invoke(func)
+        self._infobar_warnings.message = str(err)
 
     def queue_replication(self, repl):
         ref = self._new_replications_window.add(repl)
@@ -197,7 +198,7 @@ class MainWindow:
     # region Event handlers
     def on_button_connect(self, button):
         self._model = None
-        self.infobar_warnings.hide()
+        self._infobar_warnings.show(False)
         self._replication_tasks_model.clear()
         self._databases_model.clear()
         self._statusbar.reset()
@@ -217,7 +218,7 @@ class MainWindow:
             self.report_error(e)
 
     def on_infobar_warnings_response(self, widget, user_data):
-        self.infobar_warnings.hide()
+        self._infobar_warnings.show(False)
 
     def on_menu_databases_refresh(self, menu):
         self._controller.update_databases(self._model.databases)

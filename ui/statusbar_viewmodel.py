@@ -39,4 +39,4 @@ class StatusBarViewModel:
         thread.run()
 
     def show_busy_spinner(self, show):
-        GtkHelper.idle(lambda: self._busy_spinner.set_visible(show))
+        GtkHelper.invoke(lambda: self._busy_spinner.set_visible(show))

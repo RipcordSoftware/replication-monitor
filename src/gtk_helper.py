@@ -46,6 +46,11 @@ class GtkHelper:
 
     @staticmethod
     def idle(task):
+        """
+        Adds a task to the Gtk queue for processing
+        :param task: the task (function/lambda) to run
+        :return: nothing
+        """
         GObject.idle_add(task)
 
     @staticmethod
