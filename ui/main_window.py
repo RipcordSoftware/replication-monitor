@@ -25,8 +25,9 @@ from ui.main_window_controller import MainWindowController
 
 from ui.main_window_model import MainWindowModel
 
-from ui.statusbar_viewmodel import StatusBarViewModel
-from ui.infobar_warnings_view_model import InfobarWarningsViewModel
+from ui.view_models.statusbar_view_model import StatusBarViewModel
+from ui.view_models.infobar_warnings_view_model import InfobarWarningsViewModel
+
 
 class MainWindow:
     SelectedDatabaseRow = collections.namedtuple('SelectedDatabaseRow', 'index db')
