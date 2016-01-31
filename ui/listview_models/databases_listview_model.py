@@ -1,9 +1,9 @@
 import re
 
-from ui.listview_model import ListViewModel
+from src.listview_model import ListViewModel
 
 
-class DatabasesModel(ListViewModel):
+class DatabasesListViewModel(ListViewModel):
     def __init__(self):
         cols = (
             ListViewModel.ColDefinition('db_name', str),

@@ -1,9 +1,9 @@
 import time
 
-from ui.listview_model import ListViewModel
+from src.listview_model import ListViewModel
 
 
-class ReplicationTasksModel(ListViewModel):
+class ReplicationTasksListViewModel(ListViewModel):
     def __init__(self):
         cols = (
             ListViewModel.ColDefinition('source', str),

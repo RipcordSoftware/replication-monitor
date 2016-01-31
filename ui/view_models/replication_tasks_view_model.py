@@ -1,13 +1,13 @@
 from src.gtk_helper import GtkHelper
+from src.listview_model import ListViewModel
 
-from ui.listview_model import ListViewModel
-from ui.replication_tasks_model import ReplicationTasksModel
+from ui.listview_models.replication_tasks_listview_model import ReplicationTasksListViewModel
 
 
 class ReplicationTasksViewModel:
     def __init__(self, listview):
         self._listview = listview
-        self._model = ReplicationTasksModel()
+        self._model = ReplicationTasksListViewModel()
         self._sorted_model = ListViewModel.Sorted(self._model)
         self._listview.set_model(self._sorted_model)
 
