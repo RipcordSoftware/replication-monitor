@@ -25,6 +25,7 @@ from ui.main_window_controller import MainWindowController
 
 from ui.main_window_model import MainWindowModel
 
+from ui.view_models.replication_tasks_view_model import ReplicationTasksViewModel
 from ui.view_models.statusbar_view_model import StatusBarViewModel
 from ui.view_models.infobar_warnings_view_model import InfobarWarningsViewModel
 from ui.view_models.connection_bar_view_model import ConnectionBarViewModel
@@ -64,8 +65,8 @@ class MainWindow:
         self.treeview_databases.enable_model_drag_source(self.DRAG_BUTTON_MASK, self.DRAG_TARGETS, self.DRAG_ACTION)
         self.treeview_databases.enable_model_drag_dest(self.DRAG_TARGETS, self.DRAG_ACTION)
 
-        self._replication_tasks_model = self._controller.replication_tasks_model
-        self.treeview_tasks.set_model(self._replication_tasks_model)
+        self._replication_tasks = ReplicationTasksViewModel(self.treeview_tasks)
+        del self.treeview_tasks
 
         self._replication_queue = NewReplicationQueue(self.report_error)
 
@@ -94,7 +95,7 @@ class MainWindow:
             if self._model and self._auto_update:
                 try:
                     self._statusbar.show_busy_spinner(True)
-                    self._controller.update_replication_tasks(self._model.replication_tasks)
+                    self._replication_tasks.update(self._model.replication_tasks)
                     self._controller.update_databases(self._model.databases)
                 except Exception as e:
                     self.report_error(e)
@@ -205,7 +206,7 @@ class MainWindow:
     def on_button_connect(self, button):
         self._model = None
         self._infobar_warnings.show(False)
-        self._replication_tasks_model.clear()
+        self._replication_tasks.clear()
         self._databases_model.clear()
         self._statusbar.reset()
         self.reset_window_titles()
@@ -215,7 +216,7 @@ class MainWindow:
 
             def request():
                 self._controller.update_databases(self._model.databases)
-                self._controller.update_replication_tasks(self._model.replication_tasks)
+                self._replication_tasks.update(self._model.replication_tasks)
                 self._statusbar.update(self._model)
                 self.update_window_titles()
 
