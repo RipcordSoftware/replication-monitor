@@ -108,27 +108,26 @@ class MainWindow:
             thread = threading.Thread(target=task)
             thread.start()
 
+    @GtkHelper.invoke_func_sync
     def get_credentials(self, server_url):
-        def func():
-            credentials = Keyring.get_auth(server_url)
-            username = credentials.username if credentials else None
-            password = credentials.password if credentials else None
+        credentials = Keyring.get_auth(server_url)
+        username = credentials.username if credentials else None
+        password = credentials.password if credentials else None
 
-            result = None
-            if self.credentials_dialog.run(server_url, username, password) == Gtk.ResponseType.OK:
-                result = self.credentials_dialog.credentials
-                if self.credentials_dialog.save_credentials:
-                    Keyring.set_auth(server_url, result.username, result.password)
-            self._statusbar.update(self._model)
-            return result
-
-        return GtkHelper.invoke(func, async=False)
+        result = None
+        if self.credentials_dialog.run(server_url, username, password) == Gtk.ResponseType.OK:
+            result = self.credentials_dialog.credentials
+            if self.credentials_dialog.save_credentials:
+                Keyring.set_auth(server_url, result.username, result.password)
+        self._statusbar.update(self._model)
+        return result
 
     def close(self):
         self._auto_update_exit.set()
         self._auto_update_thread.join()
         Gtk.main_quit()
 
+    @GtkHelper.invoke_func
     def report_error(self, err):
         self._infobar_warnings.message = str(err)
 
