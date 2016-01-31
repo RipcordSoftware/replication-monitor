@@ -1,6 +1,5 @@
 import threading
 import webbrowser
-import collections
 import re
 from urllib.parse import urlparse
 
@@ -21,10 +20,9 @@ from ui.dialogs.about_dialog import AboutDialog
 
 from ui.new_replications_window import NewReplicationsWindow
 
-from ui.main_window_controller import MainWindowController
-
 from ui.main_window_model import MainWindowModel
 
+from ui.view_models.databases_view_model import DatabasesViewModel
 from ui.view_models.replication_tasks_view_model import ReplicationTasksViewModel
 from ui.view_models.statusbar_view_model import StatusBarViewModel
 from ui.view_models.infobar_warnings_view_model import InfobarWarningsViewModel
@@ -32,17 +30,11 @@ from ui.view_models.connection_bar_view_model import ConnectionBarViewModel
 
 
 class MainWindow:
-    SelectedDatabaseRow = collections.namedtuple('SelectedDatabaseRow', 'index db')
-
     _auto_update = False
     _auto_update_thread = None
     _auto_update_exit = threading.Event()
 
     _watch_cursor = Gdk.Cursor.new(Gdk.CursorType.WATCH)
-
-    DRAG_BUTTON_MASK = Gdk.ModifierType.BUTTON1_MASK
-    DRAG_TARGETS = [('text/plain', 0, 0)]
-    DRAG_ACTION = Gdk.DragAction.COPY
 
     def __init__(self, builder):
         self._model = None
@@ -58,12 +50,8 @@ class MainWindow:
         self.remote_replication_dialog = RemoteReplicationDialog(builder)
         self.about_dialog = AboutDialog(builder)
 
-        self._controller = MainWindowController()
-
-        self._databases_model = self._controller.databases_model
-        self.treeview_databases.set_model(self._databases_model)
-        self.treeview_databases.enable_model_drag_source(self.DRAG_BUTTON_MASK, self.DRAG_TARGETS, self.DRAG_ACTION)
-        self.treeview_databases.enable_model_drag_dest(self.DRAG_TARGETS, self.DRAG_ACTION)
+        self._databases = DatabasesViewModel(self.treeview_databases)
+        del self.treeview_databases
 
         self._replication_tasks = ReplicationTasksViewModel(self.treeview_tasks)
         del self.treeview_tasks
@@ -96,7 +84,7 @@ class MainWindow:
                 try:
                     self._statusbar.show_busy_spinner(True)
                     self._replication_tasks.update(self._model.replication_tasks)
-                    self._controller.update_databases(self._model.databases)
+                    self._databases.update(self._model.databases)
                 except Exception as e:
                     self.report_error(e)
                 finally:
@@ -151,7 +139,7 @@ class MainWindow:
                                     lambda err: self._new_replications_window.update_failed(ref, err))
 
     def set_selected_databases_limit(self, limit):
-        selected_databases = [item for item in self.selected_databases if item.db_name[0] != '_']
+        selected_databases = [item for item in self._databases.selected if item.db_name[0] != '_']
         if len(selected_databases) > 0:
             def func():
                 for row in selected_databases:
@@ -185,21 +173,6 @@ class MainWindow:
     @property
     def secure(self):
         return self._connection_bar.secure
-
-    @property
-    def selected_database_rows(self):
-        rows = []
-        (_, path_list) = self.treeview_databases.get_selection().get_selected_rows()
-        if path_list and len(path_list):
-            for path in path_list:
-                db = self._databases_model[path]
-                rows.append(self.SelectedDatabaseRow(path, db))
-        return rows
-
-    @property
-    def selected_databases(self):
-        rows = self.selected_database_rows
-        return [db for path, db in rows]
     # endregion
 
     # region Event handlers
@@ -207,7 +180,7 @@ class MainWindow:
         self._model = None
         self._infobar_warnings.show(False)
         self._replication_tasks.clear()
-        self._databases_model.clear()
+        self._databases.clear()
         self._statusbar.reset()
         self.reset_window_titles()
 
@@ -215,7 +188,7 @@ class MainWindow:
             self._model = MainWindowModel(self.server, self.port, self.secure, self.get_credentials)
 
             def request():
-                self._controller.update_databases(self._model.databases)
+                self._databases.update(self._model.databases)
                 self._replication_tasks.update(self._model.replication_tasks)
                 self._statusbar.update(self._model)
                 self.update_window_titles()
@@ -228,7 +201,7 @@ class MainWindow:
         self._infobar_warnings.show(False)
 
     def on_menu_databases_refresh(self, menu):
-        self._controller.update_databases(self._model.databases)
+        self._databases.update(self._model.databases)
 
     def on_comboboxtext_port_changed(self, widget):
         self._connection_bar.on_comboboxtext_port_changed()
@@ -249,25 +222,22 @@ class MainWindow:
             def request():
                 self._model.create_database(name)
                 db = self._model.get_database(name)
-                self._databases_model.append(db)
+                self._databases.append(db)
             self.couchdb_request(request)
 
     def on_menu_databases_delete(self, menu):
-        selected_database_rows = [item for item in self.selected_database_rows if item.db.db_name[0] != '_']
-        if len(selected_database_rows) > 0:
-            result = self.delete_databases_dialog.run(selected_database_rows)
+        selected_databases = [item for item in self._databases.selected if item.db_name[0] != '_']
+        if len(selected_databases) > 0:
+            result = self.delete_databases_dialog.run(selected_databases)
             if result == Gtk.ResponseType.OK:
-                model = self._databases_model
-
                 def request():
-                    for row in reversed(self.delete_databases_dialog.selected_database_rows):
-                        self._model.delete_database(row.db.db_name)
-                        itr = model.get_iter(row.index)
-                        model.remove(itr)
+                    for db in reversed(self.delete_databases_dialog.selected_databases):
+                        self._model.delete_database(db.db_name)
+                        self._databases.remove(db.db_name)
                 self.couchdb_request(request)
 
     def on_menu_databases_backup(self, menu):
-        selected_databases = self.selected_databases
+        selected_databases = self._databases.selected
         if len(selected_databases) == 1 and selected_databases[0].db_name.find('backup$') < 0:
             backup_database = True
             source_name = selected_databases[0].db_name
@@ -289,7 +259,7 @@ class MainWindow:
                 self.queue_replication(repl)
 
     def on_menu_databases_restore(self, menu):
-        selected_databases = self.selected_databases
+        selected_databases = self._databases.selected
         if len(selected_databases) == 1 and selected_databases[0].db_name.find('backup$') == 0:
             restore_database = True
             source_name = selected_databases[0].db_name
@@ -311,7 +281,7 @@ class MainWindow:
                 self.queue_replication(repl)
 
     def on_menuitem_databases_compact(self, menu):
-        selected_databases = self.selected_databases
+        selected_databases = self._databases.selected
         if len(selected_databases) == 1:
             def func():
                 name = selected_databases[0].db_name
@@ -319,32 +289,32 @@ class MainWindow:
             self.couchdb_request(func)
 
     def on_menu_databases_browse_futon(self, menu):
-        selected_databases = self.selected_database_rows
+        selected_databases = self._databases.selected
         if len(selected_databases) > 0:
-            db = selected_databases[0].db
+            db = selected_databases[0]
             url = 'https' if self.secure else 'http'
             url += '://' + self.server + ':' + self.port + '/_utils/database.html?' + db.db_name
             webbrowser.open_new_tab(url)
 
     def on_menu_databases_browse_fauxton(self, menu):
-        selected_databases = self.selected_database_rows
+        selected_databases = self._databases.selected
         if len(selected_databases) > 0:
-            db = selected_databases[0].db
+            db = selected_databases[0]
             url = 'https' if self.secure else 'http'
             url += '://' + self.server + ':' + self.port + '/_utils/fauxton/index.html#/database/' + db.db_name + '/_all_docs?limit=20'
             webbrowser.open_new_tab(url)
 
     def on_menu_databases_browse_alldocs(self, menu):
-        selected_databases = self.selected_database_rows
+        selected_databases = self._databases.selected
         if len(selected_databases) > 0:
-            db = selected_databases[0].db
+            db = selected_databases[0]
             url = 'https' if self.secure else 'http'
             url += '://' + self.server + ':' + self.port + '/' + db.db_name + '/_all_docs?limit=100'
             webbrowser.open_new_tab(url)
 
     def on_menuitem_databases_replication_new(self, menu):
         replications = None
-        selected_databases = self.selected_databases
+        selected_databases = self._databases.selected
         selected_count = len(selected_databases)
 
         if selected_count == 1:
@@ -379,7 +349,7 @@ class MainWindow:
 
     def on_menu_databases_show(self, menu):
         connected = self._model is not None
-        selected_databases = self.selected_databases
+        selected_databases = self._databases.selected
         single_row = len(selected_databases) == 1
         multiple_rows = len(selected_databases) > 1
         enable_backup = single_row and selected_databases[0].db_name.find('backup$') < 0
@@ -442,7 +412,7 @@ class MainWindow:
                 self.checkmenuitem_view_new_replication_window.set_active(True)
 
     def on_treeview_databases_drag_data_get(self, widget, drag_context, data, info, time):
-        selected_databases = self.selected_databases
+        selected_databases = self._databases.selected
         selected_count = len(selected_databases)
         if selected_count > 0:
             text = ''

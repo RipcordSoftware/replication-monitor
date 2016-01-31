@@ -4,26 +4,25 @@ from src.model_mapper import ModelMapper
 
 
 class DeleteDatabasesDialog:
-    _database_rows = None
-    _selected_database_rows = None
-
     def __init__(self, builder):
         self._win = builder.get_object('dialog_delete_databases', target=self, include_children=True)
+        self._databases = None
+        self._selected_databases = None
 
     def run(self, databases):
-        self._database_rows = databases
-        self._selected_database_rows = None
+        self._databases = databases
+        self._selected_databases = None
 
         result = self._win.run()
         self._win.hide()
-        self._database_rows = None
+        self._databases = None
 
         if result == Gtk.ResponseType.OK:
-            self._selected_database_rows = self._get_selected_database_rows()
+            self._selected_databases = self._get_selected_databases()
 
         return result
 
-    def _get_selected_database_rows(self):
+    def _get_selected_databases(self):
         selected_databases = []
         model = self.treeview_delete_databases.get_model()
         itr = model.get_iter_first()
@@ -37,20 +36,20 @@ class DeleteDatabasesDialog:
         return selected_databases
 
     def set_button_ok_active_state(self):
-        sensitive = len(self._get_selected_database_rows()) > 0
+        sensitive = len(self._get_selected_databases()) > 0
         self.button_delete_databases_dialog_ok.set_sensitive(sensitive)
 
     # region Properties
     @property
-    def selected_database_rows(self):
-        return self._selected_database_rows
+    def selected_databases(self):
+        return self._selected_databases
     # endregion
 
     # region Events
     def on_dialog_delete_databases_show(self, dialog):
         model = Gtk.ListStore(str, bool, object)
-        for row in self._database_rows:
-            mapper = ModelMapper(row, [lambda i=row: i.db.db_name, lambda i: True])
+        for db in self._databases:
+            mapper = ModelMapper(db, [lambda i: i.db_name, lambda i: True])
             model.append(mapper)
         self.treeview_delete_databases.set_model(model)
         model.connect('row-changed', self.on_row_changed)
