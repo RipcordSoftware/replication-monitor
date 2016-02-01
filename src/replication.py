@@ -80,7 +80,7 @@ class Replication:
         return couchdb.create_replication(source, target, create_target=self._create, continuous=self._continuous)
 
     def _replicate_remote(self):
-        couchdb = self._model
+        couchdb = self._model.couchdb
         source = self._source
         target = self._target
         source_is_remote = not self._is_local(source)

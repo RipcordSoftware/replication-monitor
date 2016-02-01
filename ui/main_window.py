@@ -304,14 +304,12 @@ class MainWindow:
 
         if selected_count == 1:
             db = selected_databases[0]
-            # TODO: review
-            result = self.new_single_replication_dialog.run(self._model.couchdb, db.db_name)
+            result = self.new_single_replication_dialog.run(self._model, db.db_name)
             if result == Gtk.ResponseType.OK:
                 replications = self.new_single_replication_dialog.replications
         elif selected_count > 1:
             source_names = [db.db_name for db in selected_databases]
-            # TODO: review
-            result = self.new_multiple_replication_dialog.run(self._model.couchdb, source_names)
+            result = self.new_multiple_replication_dialog.run(self._model, source_names)
             if result == Gtk.ResponseType.OK:
                 replications = self.new_multiple_replication_dialog.replications
 
@@ -322,8 +320,7 @@ class MainWindow:
 
     def on_menuitem_databases_replication_remote(self, menu):
         replications = None
-        # TODO: review
-        result = self.remote_replication_dialog.run(self._model.couchdb)
+        result = self.remote_replication_dialog.run(self._model)
         if result == Gtk.ResponseType.OK:
             replications = self.remote_replication_dialog.replications
 

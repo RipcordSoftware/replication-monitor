@@ -12,10 +12,10 @@ class NewSingleReplicationDialog:
         self._target_model.connect('row-deleted', self.on_target_model_row_deleted)
         self.treeview_new_replication_dialog_targets.set_model(self._target_model)
         self._replications = None
-        self._couchdb = None
+        self._model = None
 
-    def run(self, couchdb, source_name):
-        self._couchdb = couchdb
+    def run(self, model, source_name):
+        self._model = model
         self._replications = []
         self.entry_new_replication_dialog_source.set_text(source_name)
         result = self._win.run()
@@ -169,7 +169,7 @@ class NewSingleReplicationDialog:
         for row in self._target_model:
             target = row[0]
             replication = Replication(
-                couchdb=self._couchdb.clone(),
+                model=self._model,
                 source=self.source, target=target, continuous=self.continuous,
                 create=self.create, drop_first=self.drop_first, repl_type=self.repl_type)
             self._replications.append(replication)

@@ -11,11 +11,11 @@ class RemoteReplicationDialog:
         self.treeview_remote_replication_databases.set_model(self._source_model)
         self._source_model.connect('row-changed', self.on_row_changed)
         self._replications = None
-        self._couchdb = None
+        self._model = None
         self._remote_couchdb = None
 
-    def run(self, couchdb):
-        self._couchdb = couchdb
+    def run(self, model):
+        self._model = model
         self._remote_couchdb = None
         self._replications = []
         result = self._win.run()
@@ -23,7 +23,7 @@ class RemoteReplicationDialog:
         return result
 
     def get_couchdb(self):
-        return CouchDB(self.server, self.port, self.is_port_secure, self._couchdb.get_credentials_callback)
+        return CouchDB(self.server, self.port, self.is_port_secure, self._model.couchdb.get_credentials_callback)
 
     def _get_selected_database_rows(self):
         selected_databases = []
@@ -122,7 +122,7 @@ class RemoteReplicationDialog:
             for database in databases:
                 source = remote_url + database
                 target = database
-                repl = Replication(self._couchdb, source, target, continuous=self.continuous, create=self.create, drop_first=self.drop_first, repl_type=self.repl_type)
+                repl = Replication(self._model, source, target, continuous=self.continuous, create=self.create, drop_first=self.drop_first, repl_type=self.repl_type)
                 self._replications.append(repl)
             self._win.response(Gtk.ResponseType.OK)
 
