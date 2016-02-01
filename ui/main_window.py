@@ -276,25 +276,25 @@ class MainWindow:
     def on_menu_databases_browse_futon(self, menu):
         selected_databases = self._databases.selected
         if len(selected_databases) > 0:
-            db = selected_databases[0]
-            url = 'https' if self.secure else 'http'
-            url += '://' + self.server + ':' + self.port + '/_utils/database.html?' + db.db_name
+            url = '{0}://{1}:{2}/_utils/database.html?{3}'.format(
+                'https' if self.secure else 'http',
+                self.server, self.port, selected_databases[0].db_name)
             webbrowser.open_new_tab(url)
 
     def on_menu_databases_browse_fauxton(self, menu):
         selected_databases = self._databases.selected
         if len(selected_databases) > 0:
-            db = selected_databases[0]
-            url = 'https' if self.secure else 'http'
-            url += '://' + self.server + ':' + self.port + '/_utils/fauxton/index.html#/database/' + db.db_name + '/_all_docs?limit=20'
+            url = '{0}://{1}:{2}/_utils/fauxton/index.html#/database/{3}/_all_docs?limit=20'.format(
+                'https' if self.secure else 'http',
+                self.server, self.port, selected_databases[0].db_name)
             webbrowser.open_new_tab(url)
 
     def on_menu_databases_browse_alldocs(self, menu):
         selected_databases = self._databases.selected
         if len(selected_databases) > 0:
-            db = selected_databases[0]
-            url = 'https' if self.secure else 'http'
-            url += '://' + self.server + ':' + self.port + '/' + db.db_name + '/_all_docs?limit=100'
+            url = '{0}://{1}:{2}/{3}/_all_docs?limit=100'.format(
+                'https' if self.secure else 'http',
+                self.server, self.port, selected_databases[0].db_name)
             webbrowser.open_new_tab(url)
 
     def on_menuitem_databases_replication_new(self, menu):
