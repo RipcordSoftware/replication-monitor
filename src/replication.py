@@ -10,8 +10,8 @@ class Replication:
         Docs = 2
         Designs = 3
 
-    def __init__(self, couchdb, source, target, continuous=False, create=False, drop_first=False, repl_type=ReplType.All):
-        self._couchdb = couchdb
+    def __init__(self, model, source, target, continuous=False, create=False, drop_first=False, repl_type=ReplType.All):
+        self._model = model
         self._source = source
         self._target = target
         self._continuous = continuous
@@ -45,7 +45,7 @@ class Replication:
 
     def replicate(self):
         # asking for the replicator database will force the user to give the right auth credentials
-        self._couchdb.get_database('_replicator')
+        self._model.couchdb.get_database('_replicator')
 
         if Replication._is_local(self._source) and Replication._is_local(self._target):
             return self._replicate_local()
@@ -53,12 +53,13 @@ class Replication:
             return self._replicate_remote()
 
     def _replicate_local(self):
+        couchdb = self._model.couchdb
         source_name = self._source
         target_name = self._target
 
-        if self._couchdb.db_type is CouchDB.DatabaseType.Cloudant and self._couchdb.auth:
-            url = self._couchdb.get_url()
-            url = url.replace('://', '://' + self._couchdb.auth.url_auth + '@')
+        if couchdb.db_type is CouchDB.DatabaseType.Cloudant and couchdb.auth:
+            url = couchdb.get_url()
+            url = url.replace('://', '://' + couchdb.auth.url_auth + '@')
             source = url + source_name
             target = url + target_name
         else:
@@ -66,34 +67,35 @@ class Replication:
             target = target_name
 
         # asking for the replicator database will force the user to give the right auth credentials
-        self._couchdb.get_docs('_replicator', limit=0)
+        couchdb.get_docs('_replicator', limit=0)
 
         if self._drop_first:
             try:
-                self._couchdb.delete_database(target_name)
+                couchdb.delete_database(target_name)
             except:
                 pass
             if not self._create:
-                self._couchdb.create_database(target_name)
+                couchdb.create_database(target_name)
 
-        return self._couchdb.create_replication(source, target, create_target=self._create, continuous=self._continuous)
+        return couchdb.create_replication(source, target, create_target=self._create, continuous=self._continuous)
 
     def _replicate_remote(self):
+        couchdb = self._model
         source = self._source
         target = self._target
         source_is_remote = not self._is_local(source)
         target_is_remote = not self._is_local(target)
 
         if source_is_remote:
-            source_couchdb = self._get_couchdb_from_url(source, self._couchdb.get_credentials_callback)
+            source_couchdb = self._get_couchdb_from_url(source, couchdb.get_credentials_callback)
         else:
-            source_couchdb = self._couchdb
+            source_couchdb = couchdb
 
         if target_is_remote:
-            target_couchdb = self._get_couchdb_from_url(target, self._couchdb.get_credentials_callback)
+            target_couchdb = self._get_couchdb_from_url(target, couchdb.get_credentials_callback)
             target_name = self._get_database_from_url(target)
         else:
-            target_couchdb = self._couchdb
+            target_couchdb = couchdb
 
         # asking for the replicator database will force the user to give the right auth credentials
         source_couchdb.get_docs('_replicator', limit=0)
@@ -113,7 +115,7 @@ class Replication:
             if not self._create:
                 target_couchdb.create_database(target_name)
 
-        return self._couchdb.create_replication(source, target, create_target=self._create, continuous=self._continuous)
+        return couchdb.create_replication(source, target, create_target=self._create, continuous=self._continuous)
 
     @staticmethod
     def _is_local(db):

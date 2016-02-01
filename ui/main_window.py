@@ -241,8 +241,7 @@ class MainWindow:
                 pass
 
             if backup_database:
-                # TODO: review
-                repl = Replication(self._model.couchdb, source_name, target_name, drop_first=True, create=True)
+                repl = Replication(self._model, source_name, target_name, drop_first=True, create=True)
                 self.queue_replication(repl)
 
     def on_menu_databases_restore(self, menu):
@@ -263,8 +262,7 @@ class MainWindow:
                 pass
 
             if restore_database:
-                # TODO: review
-                repl = Replication(self._model.couchdb, source_name, target_name, drop_first=True, create=True)
+                repl = Replication(self._model, source_name, target_name, drop_first=True, create=True)
                 self.queue_replication(repl)
 
     def on_menuitem_databases_compact(self, menu):
@@ -391,8 +389,7 @@ class MainWindow:
                     u = urlparse(url)
                     if not (u.hostname == self.server and u.port == self.port):
                         target = u.path[1::]
-                        # TODO: review
-                        repl = Replication(self._model.couchdb.clone(), url, target, continuous=False, create=True)
+                        repl = Replication(self._model, url, target, continuous=False, create=True)
                         self.queue_replication(repl)
                         repl_count += 1
             if repl_count:
