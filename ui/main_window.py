@@ -22,6 +22,7 @@ from ui.new_replications_window import NewReplicationsWindow
 
 from ui.main_window_model import MainWindowModel
 
+from ui.view_models.main_window_view_model import MainWindowViewModel
 from ui.view_models.databases_view_model import DatabasesViewModel
 from ui.view_models.replication_tasks_view_model import ReplicationTasksViewModel
 from ui.view_models.statusbar_view_model import StatusBarViewModel
@@ -49,6 +50,8 @@ class MainWindow:
         self._new_replications_window = NewReplicationsWindow(builder, self.on_hide_new_replication_window)
         self.remote_replication_dialog = RemoteReplicationDialog(builder)
         self.about_dialog = AboutDialog(builder)
+
+        self._main_window_view_model = MainWindowViewModel(self._win, self._new_replications_window)
 
         self._databases = DatabasesViewModel(self.treeview_databases)
         del self.treeview_databases
@@ -93,7 +96,7 @@ class MainWindow:
     # TODO: rename as model_request
     def couchdb_request(self, func):
         if self._model:
-            GtkHelper.invoke(lambda: self._win.get_window().set_cursor(self._watch_cursor), async=False)
+            self._main_window_view_model.set_watch_cursor()
 
             def task():
                 nonlocal func
@@ -103,7 +106,7 @@ class MainWindow:
                 except Exception as e:
                     self.report_error(e)
                 finally:
-                    GtkHelper.invoke(lambda: self._win.get_window().set_cursor(None))
+                    self._main_window_view_model.set_default_cursor()
 
             thread = threading.Thread(target=task)
             thread.start()
@@ -145,21 +148,6 @@ class MainWindow:
                     self._model.set_revs_limit(row.db_name, limit)
             self.couchdb_request(func)
 
-    def reset_window_titles(self):
-        title = self.get_default_window_title(self._win)
-        self._win.set_title(title)
-        title = self.get_default_window_title(self._new_replications_window)
-        self._new_replications_window.set_title(title)
-
-    def update_window_titles(self):
-        url = self._model.url
-        title = self.get_default_window_title(self._win)
-        title += ' - ' + url
-        self._win.set_title(title)
-        title = self.get_default_window_title(self._new_replications_window)
-        title += ' - ' + url
-        self._new_replications_window.set_title(title)
-
     # region Properties
     @property
     def server(self):
@@ -181,7 +169,7 @@ class MainWindow:
         self._replication_tasks.clear()
         self._databases.clear()
         self._statusbar.reset()
-        self.reset_window_titles()
+        self._main_window_view_model.reset_window_titles()
 
         try:
             self._model = MainWindowModel(self.server, self.port, self.secure, self.get_credentials)
@@ -190,7 +178,7 @@ class MainWindow:
                 self._databases.update(self._model.databases)
                 self._replication_tasks.update(self._model.replication_tasks)
                 self._statusbar.update(self._model)
-                self.update_window_titles()
+                self._main_window_view_model.update_window_titles(self._model)
 
             self.couchdb_request(request)
         except Exception as e:
@@ -437,10 +425,3 @@ class MainWindow:
     def on_menuitem_database_set_revisions_1000_activate(self, menu):
         self.set_selected_databases_limit(1000)
     # endregion
-
-    # region Static methods
-    @staticmethod
-    def get_default_window_title(window):
-        title = window.get_title().split('-')[0].rstrip(' ')
-        return title
-# endregion
