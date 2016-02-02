@@ -3,6 +3,7 @@ from gi.repository import Gtk
 from src.couchdb import CouchDB
 from src.replication import Replication
 
+from ui.view_models.server_history_view_model import ServerHistoryViewModel
 
 class RemoteReplicationDialog:
     def __init__(self, builder):
@@ -10,6 +11,7 @@ class RemoteReplicationDialog:
         self._source_model = Gtk.ListStore(bool, str)
         self.treeview_remote_replication_databases.set_model(self._source_model)
         self._source_model.connect('row-changed', self.on_row_changed)
+        self.entry_remote_replication_dialog_server.set_completion(ServerHistoryViewModel.completion())
         self._replications = None
         self._model = None
         self._remote_couchdb = None

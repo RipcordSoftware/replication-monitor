@@ -7,6 +7,7 @@ class Keyring:
     Credentials = namedtuple('Credentials', 'username password')
 
     _service = 'avancedb-replication-monitor'
+    _server_history = '-server-history'
 
     def __init__(self):
         raise NotImplementedError
@@ -30,3 +31,13 @@ class Keyring:
     @staticmethod
     def remove_auth(url):
         keyring.delete_password(Keyring._service, url)
+
+    @staticmethod
+    def update_server_history(servers):
+        keyring.set_password(Keyring._service, Keyring._server_history, json.dumps(servers))
+
+    @staticmethod
+    def get_server_history():
+        json_history = keyring.get_password(Keyring._service, Keyring._server_history)
+        history = json.loads(json_history) if json_history else []
+        return history

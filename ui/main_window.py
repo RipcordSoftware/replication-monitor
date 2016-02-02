@@ -179,6 +179,7 @@ class MainWindow:
                 self._replication_tasks.update(self._model.replication_tasks)
                 self._statusbar.update(self._model)
                 self._main_window_view_model.update_window_titles(self._model)
+                self._connection_bar.append_server_to_history(self.server)
 
             self.couchdb_request(request)
         except Exception as e:

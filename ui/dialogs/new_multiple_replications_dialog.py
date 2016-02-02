@@ -3,6 +3,8 @@ from gi.repository import Gtk
 from src.gtk_helper import GtkHelper
 from src.replication import Replication
 
+from ui.view_models.server_history_view_model import ServerHistoryViewModel
+
 
 class NewMultipleReplicationDialog:
     def __init__(self, builder):
@@ -11,6 +13,7 @@ class NewMultipleReplicationDialog:
         self._target_model.connect('row-inserted', self.on_target_model_row_added)
         self._target_model.connect('row-deleted', self.on_target_model_row_deleted)
         self.treeview_new_replications_dialog_targets.set_model(self._target_model)
+        self.entry_new_replications_dialog_server.set_completion(ServerHistoryViewModel.completion())
         self._replications = None
         self._model = None
         self._source_names = None
