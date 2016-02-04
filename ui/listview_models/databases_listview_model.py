@@ -10,7 +10,7 @@ class DatabasesListViewModel(ListViewModel):
             ListViewModel.ColDefinition('doc_count', int),
             ListViewModel.ColDefinition(lambda row: self._get_update_sequence(row.update_seq), int),
             ListViewModel.ColDefinition(lambda row: int(round(row.disk_size / 1024 / 1024)), int),
-            ListViewModel.ColDefinition(lambda row: 'Yes' if row.compact_running else 'No', str),
+            ListViewModel.ColDefinition(lambda row: 'Yes' if getattr(row, 'compact_running', False) else 'No', str),
             ListViewModel.ColDefinition('revs_limit', int)
         )
         super().__init__(cols)

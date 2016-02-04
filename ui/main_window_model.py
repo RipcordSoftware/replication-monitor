@@ -43,7 +43,8 @@ class MainWindowModel:
         databases = []
         for db_name in self._couchdb.get_databases():
             db = self._couchdb.get_database(db_name)
-            limit = self._couchdb.get_revs_limit(db_name)
+            limit = self._couchdb.get_revs_limit(db_name) \
+                if self._couchdb.db_type is not CouchDB.DatabaseType.PouchDB else 0
             db = self._append_field(db, ('revs_limit', limit), 'Database')
             databases.append(db)
         return databases

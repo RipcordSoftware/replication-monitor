@@ -132,7 +132,7 @@ class MainWindow:
 
     @GtkHelper.invoke_func
     def report_error(self, err):
-        self._infobar_warnings.message = str(err)
+        self._infobar_warnings.message = err
 
     def queue_replication(self, repl):
         ref = self._new_replications_window.add(repl)
