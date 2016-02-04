@@ -1,10 +1,44 @@
 from threading import local
 from collections import namedtuple
+from http.client import HTTPException
 
 from src.couchdb import CouchDB
 
 
 class MainWindowModel:
+    class _CouchDBProxy:
+        """A proxy class for CouchDB
+
+        Handles HTTP exception cases by creating a new connection to the server
+        while passing on the original exception
+
+        Helps reduce stalled connections which break the app
+        """
+        def __init__(self, couchdb):
+            self._couchdb = couchdb
+
+        def _reset_couchdb(self):
+            couchdb = self._couchdb.clone()
+            self._couchdb.close()
+            self._couchdb = couchdb
+
+        def __getattr__(self, item):
+            try:
+                value = getattr(self._couchdb, item)
+                if callable(value):
+                    def func(*args, **kwargs):
+                        try:
+                            return value(*args, **kwargs)
+                        except HTTPException:
+                            self._reset_couchdb()
+                            raise
+                    return func
+                else:
+                    return value
+            except HTTPException:
+                self._reset_couchdb()
+                raise
+
     def __init__(self, server, port, secure, get_credentials=None):
         self._server = server
         self._port = port
@@ -92,7 +126,7 @@ class MainWindowModel:
 
         if not couchdb:
             couchdb = CouchDB(self._server, self._port, self._secure, self._get_credentials)
-            self._local.couchdb = couchdb
+            self._local.couchdb = MainWindowModel._CouchDBProxy(couchdb)
 
         return couchdb
 
