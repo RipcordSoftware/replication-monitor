@@ -14,7 +14,10 @@ class InfobarWarningsViewModel:
     @message.setter
     @GtkHelper.invoke_func
     def message(self, value):
-        self._message.set_text(value)
+        if isinstance(value, Exception):
+            self._message.set_text('{}: {}'.format(type(value).__name__, str(value)))
+        else:
+            self._message.set_text(str(value))
         self.show(True)
 
     @GtkHelper.invoke_func

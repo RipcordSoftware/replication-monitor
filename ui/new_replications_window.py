@@ -35,14 +35,17 @@ class NewReplicationsWindow:
                 self._model[path][2] = 'emblem-default'
             GtkHelper.invoke(func)
 
-    def update_failed(self, reference, msg=None):
+    def update_failed(self, reference, err=None):
         assert isinstance(reference, Gtk.TreeRowReference)
         if reference.valid():
             def func():
                 path = reference.get_path()
                 self._model[path][2] = 'emblem-important'
-                if msg:
-                    self._model[path][3] = str(msg)
+                if err:
+                    if isinstance(err, Exception):
+                        self._model[path][3] = '{}: {}'.format(type(err).__name__, str(err))
+                    else:
+                        self._model[path][3] = str(err)
             GtkHelper.invoke(func)
 
     # region Events
