@@ -5,6 +5,8 @@ from src.couchdb import CouchDB
 
 
 class Replication:
+    _RETRY_LIMIT = 3
+
     class ReplType(Enum):
         All = 1
         Docs = 2
@@ -18,6 +20,7 @@ class Replication:
         self._create = create
         self._drop_first = drop_first
         self._repl_type = repl_type
+        self._retry = self._RETRY_LIMIT
 
     @property
     def source(self):
@@ -43,17 +46,25 @@ class Replication:
     def repl_type(self):
         return self._repl_type
 
-    def replicate(self):
-        # asking for the replicator database will force the user to give the right auth credentials
-        self._model.couchdb.get_database('_replicator')
+    def replicate(self, couchdb=None):
+        couchdb = self._model.couchdb if not couchdb else couchdb
 
-        if Replication._is_local(self._source) and Replication._is_local(self._target):
-            return self._replicate_local()
-        else:
-            return self._replicate_remote()
+        try:
+            # asking for the replicator database will force the user to give the right auth credentials
+            couchdb.get_database('_replicator')
 
-    def _replicate_local(self):
-        couchdb = self._model.couchdb
+            if Replication._is_local(self._source) and Replication._is_local(self._target):
+                return self._replicate_local(couchdb)
+            else:
+                return self._replicate_remote(couchdb)
+        except:
+            self._retry -= 1
+            if self._retry > 1:
+                self.replicate(couchdb.clone())
+            else:
+                raise
+
+    def _replicate_local(self, couchdb):
         source_name = self._source
         target_name = self._target
 
@@ -79,8 +90,7 @@ class Replication:
 
         return couchdb.create_replication(source, target, create_target=self._create, continuous=self._continuous)
 
-    def _replicate_remote(self):
-        couchdb = self._model.couchdb
+    def _replicate_remote(self, couchdb):
         source = self._source
         target = self._target
         source_is_remote = not self._is_local(source)
