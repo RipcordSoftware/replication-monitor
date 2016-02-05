@@ -3,10 +3,13 @@
 import os
 import sys
 
+import gi
+gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
 from src.builder import Builder
 from ui.main_window import MainWindow
+
 
 def main():
     ui_path = os.path.dirname(os.path.realpath(sys.argv[0]))
