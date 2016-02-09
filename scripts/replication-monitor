@@ -1,0 +1,6 @@
+#!/usr//bin/env python3
+
+from replication_monitor.replication_monitor import main
+
+
+main()

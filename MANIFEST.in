@@ -1,0 +1,3 @@
+include LICENSE *.py
+recursive-include ui *.py *.glade *.png
+recursive-include src *.py
