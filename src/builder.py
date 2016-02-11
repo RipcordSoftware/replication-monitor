@@ -1,5 +1,6 @@
 from gi.repository import Gtk
 import xml.etree.ElementTree as ET
+import codecs
 
 
 class Builder:
@@ -18,7 +19,7 @@ class Builder:
         """
         self._builder.add_from_file(filename)
 
-        with open(filename, 'rt') as f:
+        with codecs.open(filename, 'r', 'utf-8') as f:
             ui = f.read()
         self.ui_root = ET.fromstring(ui)
 
