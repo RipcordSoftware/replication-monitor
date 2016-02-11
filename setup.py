@@ -26,6 +26,7 @@ classifiers = [
     'License :: OSI Approved :: MIT License',
     'Natural Language :: English',
     'Operating System :: POSIX :: Linux',
+    'Operating System :: Microsoft :: Windows',
     'Programming Language :: Python :: 3 :: Only',
     'Programming Language :: Python :: 3.3',
     'Programming Language :: Python :: 3.4',
@@ -35,7 +36,7 @@ classifiers = [
 ]
 
 setup(name='replication-monitor',
-      version='0.1.0',
+      version='0.1.1',
       author='Craig Minihan, Ripcord Software',
       author_email='craig@ripcordsoftware.com',
       url='https://github.com/RipcordSoftware/avancedb-replication-monitor',
