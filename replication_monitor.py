@@ -3,7 +3,14 @@
 import os
 import sys
 
-import gi
+try:
+    import gi
+except Exception as ex:
+    print('Unable to load the GTK+ gi module.\n'
+          'Is GTK+ installed on your operating system and the gi module installed into Python?\n'
+          'The error reported is: ' + str(ex))
+    sys.exit(1)
+
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 

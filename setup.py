@@ -48,6 +48,6 @@ setup(name='replication-monitor',
       packages=['replication_monitor'],
       package_dir={'replication_monitor': '.'},
       package_data={'replication_monitor': files},
-      scripts=['scripts/replication-monitor'],
+      scripts=['scripts/replication-monitor', 'scripts/replication-monitor.bat'],
       install_requires=['keyring >= 0.8.3', 'keyrings.alt >= 1.1']
       )
