@@ -21,6 +21,7 @@ if __name__ != '__main__':
 from src.builder import Builder
 from ui.main_window import MainWindow
 
+
 def main():
     ui_path = os.path.dirname(os.path.realpath(__file__))
     ui_path = os.path.join(ui_path, 'ui/replication_monitor.glade')
