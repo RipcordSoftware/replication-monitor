@@ -336,6 +336,7 @@ class MainWindow:
         connected = self._model is not None
         db_type = self._model.couchdb.db_type if connected else CouchDB.DatabaseType.Unknown
         is_pouchdb = db_type == CouchDB.DatabaseType.PouchDB
+        is_cloudant = db_type == CouchDB.DatabaseType.Cloudant
         selected_databases = self._databases.selected
         single_row = len(selected_databases) == 1
         multiple_rows = len(selected_databases) > 1
@@ -350,13 +351,13 @@ class MainWindow:
         self.menuitem_databases_browse_fauxton.set_sensitive(single_row or multiple_rows)
         self.menuitem_databases_browse_alldocs.set_sensitive(single_row or multiple_rows)
         self.menuitem_databases_delete.set_sensitive(single_row or multiple_rows)
-        self.menuitem_databases_compact.set_sensitive(not is_pouchdb and (single_row or multiple_rows))
+        self.menuitem_databases_compact.set_sensitive(not is_cloudant and (single_row or multiple_rows))
         self.menuitem_databases_replication_new.set_sensitive(single_row or multiple_rows)
         self.menuitem_databases_replication_from_remote.set_sensitive(connected)
-        self.menuitem_database_set_revisions_1.set_sensitive(single_row or multiple_rows)
-        self.menuitem_database_set_revisions_10.set_sensitive(single_row or multiple_rows)
-        self.menuitem_database_set_revisions_100.set_sensitive(single_row or multiple_rows)
-        self.menuitem_database_set_revisions_1000.set_sensitive(single_row or multiple_rows)
+        self.menuitem_database_set_revisions_1.set_sensitive(not is_pouchdb and (single_row or multiple_rows))
+        self.menuitem_database_set_revisions_10.set_sensitive(not is_pouchdb and (single_row or multiple_rows))
+        self.menuitem_database_set_revisions_100.set_sensitive(not is_pouchdb and (single_row or multiple_rows))
+        self.menuitem_database_set_revisions_1000.set_sensitive(not is_pouchdb and (single_row or multiple_rows))
 
     def on_menu_databases_realize(self, menu):
         self.on_menu_databases_show(menu)
