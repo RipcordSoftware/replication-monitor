@@ -1,6 +1,9 @@
-AvanceDB Replication Monitor
+.. |replmon| image:: https://raw.githubusercontent.com/RipcordSoftware/avancedb-replication-monitor/master/ui/avancedb-replication-monitor-small.png
+
+|replmon| AvanceDB Replication Monitor
 ============================
-A GTK+ desktop app which can create, monitor and delete AvanceDB, CouchDB, PouchDB or IBM Cloudant replication jobs. Runs on Linux/Gnome but can be persuaded to run on `Windows <https://github.com/RipcordSoftware/avancedb-replication-monitor/wiki/Platform:-Windows>`_ or `OSX <https://github.com/RipcordSoftware/avancedb-replication-monitor/wiki/Platform:-OSX>`_.
+A GTK+ desktop app which can create, monitor and delete AvanceDB, CouchDB, PouchDB or IBM Cloudant replication jobs.
+Runs on Linux/Gnome but can be persuaded to run on `Windows <https://github.com/RipcordSoftware/avancedb-replication-monitor/wiki/Platform:-Windows>`_ or `OSX <https://github.com/RipcordSoftware/avancedb-replication-monitor/wiki/Platform:-OSX>`_.
 
 Features:
 --------
@@ -19,3 +22,20 @@ Requirements:
 - Keyring
 - Requests
 
+Installation
+------------
+Install the latest release on ``pypi`` with ``pip``:
+
+.. code-block:: bash
+
+    $ pip3 install replication-monitor
+
+Alternately pull the latest code from our ``github`` repository:
+
+.. code-block:: bash
+
+    $ git clone https://github.com/RipcordSoftware/avancedb-replication-monitor.git
+    $ cd avancedb-replication-monitor
+    $ ./replication_monitor.py
+
+If you clone from ``git`` make sure you satisfy the ``requirements.txt`` file.
