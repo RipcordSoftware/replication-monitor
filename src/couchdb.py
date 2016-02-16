@@ -1,9 +1,10 @@
 import json
+import requests
 from collections import namedtuple
-from http.client import HTTPConnection, HTTPSConnection
 from base64 import b64encode
 from urllib.parse import quote_plus
 from enum import Enum
+from contextlib import closing
 
 
 class CouchDBException(Exception):
@@ -73,12 +74,12 @@ class CouchDB:
     class Response:
         def __init__(self, response, body=None, content_type=None):
             self._response = response
-            self._content_type = content_type if content_type is not None else response.getheader('content-type')
+            self._content_type = content_type if content_type is not None else response.headers['content-type']
             self._body = body
 
         @property
         def status(self):
-            return self._response.status
+            return self._response.status_code
 
         @property
         def reason(self):
@@ -97,13 +98,13 @@ class CouchDB:
             return self._content_type.find('application/json') == 0
 
     _auth_cache = {}
+    _session = requests.Session()
 
     def __init__(self, host, port, secure, get_credentials=None, auth=None, signature=None):
         self._host = host
         self._port = int(port)
         self._secure = secure
         self._get_credentials = get_credentials
-        self._conn = HTTPSConnection(host, port) if secure else HTTPConnection(host, port)
         self._auth = auth
         self._auth_active = False
         self._signature = signature
@@ -113,9 +114,7 @@ class CouchDB:
                        auth=self._auth, signature=self._signature)
 
     def close(self):
-        if self._conn:
-            self._conn.close()
-            self._conn = None
+        pass
 
     def __enter__(self):
         return self
@@ -243,60 +242,55 @@ class CouchDB:
             raise CouchDBException(response)
 
     def _make_request(self, uri, method='GET', body=None, content_type=None):
-        headers = {}
+        auth = None
         if self._auth:
-            headers['Authorization'] = 'Basic ' + self._auth.basic_auth
+            auth = (self._auth.username, self._auth.password)
 
+        headers = {}
         if (method == 'PUT' or method == 'POST') and content_type is not None:
             headers['Content-Type'] = content_type
 
-        self._conn.request(method, uri, body, headers)
+        request = getattr(CouchDB._session, method.lower())
 
-        response = self._conn.getresponse()
-        response_body = response.readall()
+        server_url = self.get_url()
+        with closing(request(server_url + uri[1::], headers=headers, data=body, auth=auth)) as response:
+            if (response.status_code == 401 or response.status_code == 403) and \
+                    callable(self._get_credentials) and not self._auth_active:
+                try:
+                    auth = self._auth_cache.get(server_url, None)
+                    if auth and not auth == self._auth:
+                        self._auth = auth
+                    else:
+                        self._auth_cache.pop(server_url, None)
+                        self._auth = None
 
-        if (response.status == 401 or response.status == 403) and \
-                callable(self._get_credentials) and not self._auth_active:
-            try:
-                server_url = self.get_url()
+                        self._auth_active = True
+                        creds = self._get_credentials(server_url)
+                        self._auth_active = False
+                        if creds:
+                            self._auth = self._Authentication(creds.username, creds.password)
 
-                auth = self._auth_cache.get(server_url, None)
-                if auth and not auth == self._auth:
-                    self._auth = auth
-                else:
-                    self._auth_cache.pop(server_url, None)
-                    self._auth = None
-
-                    self._auth_active = True
-                    creds = self._get_credentials(server_url)
+                    if self._auth:
+                        result = self._make_request(uri, method, body, content_type)
+                        self._auth_cache[server_url] = self._auth
+                        return result
+                finally:
                     self._auth_active = False
-                    if creds:
-                        self._auth = self._Authentication(creds.username, creds.password)
 
-                if self._auth:
-                    result = self._make_request(uri, method, body, content_type)
-                    self._auth_cache[server_url] = self._auth
-                    return result
-            finally:
-                self._auth_active = False
+            response_body = response.text
+            response_content_type = response.headers['content-type']
 
-        response_content_type = response.getheader('content-type')
-        if response_content_type.find('utf-8') >= 0:
-            response_body = response_body.decode('utf-8')
-        else:
-            response_body = response_body.decode('ascii')
+            if response_content_type.find('text/plain') == 0 and \
+                    len(response_body) > 0 and \
+                    (response_body[0] == '{' or response_body[0] == '['):
+                response_content_type = response_content_type.replace('text/plain', 'application/json')
 
-        if response_content_type.find('text/plain') == 0 and \
-                len(response_body) > 0 and \
-                (response_body[0] == '{' or response_body[0] == '['):
-            response_content_type = response_content_type.replace('text/plain', 'application/json')
+            if response_content_type.find('application/json') == 0:
+                response_body = json.loads(
+                    response_body,
+                    object_hook=lambda o: namedtuple('CouchDBResponse', CouchDB._validate_keys(o.keys()))(*o.values()))
 
-        if response_content_type.find('application/json') == 0:
-            response_body = json.loads(
-                response_body,
-                object_hook=lambda o: namedtuple('Struct', CouchDB._validate_keys(o.keys()))(*o.values()))
-
-        return CouchDB.Response(response, response_body, response_content_type)
+            return CouchDB.Response(response, response_body, response_content_type)
 
     @staticmethod
     def _validate_keys(keys):

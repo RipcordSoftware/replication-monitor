@@ -27,6 +27,7 @@ classifiers = [
     'Natural Language :: English',
     'Operating System :: POSIX :: Linux',
     'Operating System :: Microsoft :: Windows',
+    'Operating System :: MacOS :: MacOS X',
     'Programming Language :: Python :: 3 :: Only',
     'Programming Language :: Python :: 3.3',
     'Programming Language :: Python :: 3.4',
@@ -49,5 +50,5 @@ setup(name='replication-monitor',
       package_dir={'replication_monitor': '.'},
       package_data={'replication_monitor': files},
       scripts=['scripts/replication-monitor', 'scripts/replication-monitor.bat'],
-      install_requires=['keyring >= 0.8.3', 'keyrings.alt >= 1.1']
+      install_requires=['keyring >= 0.8.3', 'keyrings.alt >= 1.1', 'requests >= 2.4']
       )
