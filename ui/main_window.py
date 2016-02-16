@@ -9,6 +9,7 @@ from src.gtk_helper import GtkHelper
 from src.keyring import Keyring
 from src.replication import Replication
 
+from src.couchdb import CouchDB
 from src.new_replication_queue import NewReplicationQueue
 from ui.dialogs.credentials_dialog import CredentialsDialog
 from ui.dialogs.new_database_dialog import NewDatabaseDialog
@@ -277,27 +278,26 @@ class MainWindow:
             self.couchdb_request(func)
 
     def on_menu_databases_browse_futon(self, menu):
-        selected_databases = self._databases.selected
-        if len(selected_databases) > 0:
+        for selected_database in self._databases.selected:
             url = '{0}://{1}:{2}/_utils/database.html?{3}'.format(
                 'https' if self.secure else 'http',
-                self.server, self.port, selected_databases[0].db_name)
+                self.server, self.port, selected_database.db_name)
             webbrowser.open_new_tab(url)
 
     def on_menu_databases_browse_fauxton(self, menu):
-        selected_databases = self._databases.selected
-        if len(selected_databases) > 0:
-            url = '{0}://{1}:{2}/_utils/fauxton/index.html#/database/{3}/_all_docs?limit=20'.format(
-                'https' if self.secure else 'http',
-                self.server, self.port, selected_databases[0].db_name)
+        url_format = '{0}://{1}:{2}/'.format('https' if self.secure else 'http', self.server, self.port)
+        url_format += '_utils/fauxton/index.html#/database/{0}/_all_docs?limit=20' \
+            if self._model.couchdb.db_type is not CouchDB.DatabaseType.PouchDB else \
+            '_utils/#/database/{0}/_all_docs'
+        for selected_database in self._databases.selected:
+            url = url_format.format(selected_database.db_name)
             webbrowser.open_new_tab(url)
 
     def on_menu_databases_browse_alldocs(self, menu):
-        selected_databases = self._databases.selected
-        if len(selected_databases) > 0:
+        for selected_database in self._databases.selected:
             url = '{0}://{1}:{2}/{3}/_all_docs?limit=100'.format(
                 'https' if self.secure else 'http',
-                self.server, self.port, selected_databases[0].db_name)
+                self.server, self.port, selected_database.db_name)
             webbrowser.open_new_tab(url)
 
     def on_menuitem_databases_replication_new(self, menu):
@@ -334,6 +334,8 @@ class MainWindow:
 
     def on_menu_databases_show(self, menu):
         connected = self._model is not None
+        db_type = self._model.couchdb.db_type if connected else CouchDB.DatabaseType.Unknown
+        is_pouchdb = db_type == CouchDB.DatabaseType.PouchDB
         selected_databases = self._databases.selected
         single_row = len(selected_databases) == 1
         multiple_rows = len(selected_databases) > 1
@@ -344,9 +346,9 @@ class MainWindow:
         self.menuitem_databases_refresh.set_sensitive(connected)
         self.menuitem_databases_backup.set_sensitive(enable_backup)
         self.menuitem_databases_restore.set_sensitive(enable_restore)
-        self.menuitem_databases_browse_futon.set_sensitive(single_row)
-        self.menuitem_databases_browse_fauxton.set_sensitive(single_row)
-        self.menuitem_databases_browse_alldocs.set_sensitive(single_row)
+        self.menuitem_databases_browse_futon.set_sensitive(not is_pouchdb and (single_row or multiple_rows))
+        self.menuitem_databases_browse_fauxton.set_sensitive(single_row or multiple_rows)
+        self.menuitem_databases_browse_alldocs.set_sensitive(single_row or multiple_rows)
         self.menuitem_databases_delete.set_sensitive(single_row or multiple_rows)
         self.menuitem_databases_compact.set_sensitive(single_row)
         self.menuitem_databases_replication_new.set_sensitive(single_row or multiple_rows)

@@ -66,6 +66,7 @@ class CouchDB:
             return quote_plus(self._username) + ':' + quote_plus(self._password)
 
     class DatabaseType(Enum):
+        Unknown = 0
         CouchDB = 1
         AvanceDB = 2
         PouchDB = 3
