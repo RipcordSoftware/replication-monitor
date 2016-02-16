@@ -225,25 +225,27 @@ class MainWindow:
                 self.couchdb_request(request)
 
     def on_menu_databases_backup(self, menu):
-        selected_databases = self._databases.selected
-        if len(selected_databases) == 1 and selected_databases[0].db_name.find('backup$') < 0:
-            backup_database = True
-            source_name = selected_databases[0].db_name
-            target_name = 'backup$' + source_name
+        for selected_database in self._databases.selected:
+            if selected_database.db_name.find('backup$') < 0:
+                backup_database = True
+                source_name = selected_database.db_name
+                target_name = 'backup$' + source_name
 
-            try:
-                self._model.get_database(target_name)
-                response = GtkHelper.run_dialog(self._win, Gtk.MessageType.QUESTION,
-                                                Gtk.ButtonsType.YES_NO,
-                                                "Target database already exists, continue?")
+                try:
+                    self._model.get_database(target_name)
+                    response = GtkHelper.run_dialog(
+                        self._win,
+                        Gtk.MessageType.QUESTION,
+                        Gtk.ButtonsType.YES_NO,
+                        "Target database '{}' already exists, continue?".format(target_name))
 
-                backup_database = response is Gtk.ResponseType.YES
-            except:
-                pass
+                    backup_database = response is Gtk.ResponseType.YES
+                except:
+                    pass
 
-            if backup_database:
-                repl = Replication(self._model, source_name, target_name, drop_first=True, create=True)
-                self.queue_replication(repl)
+                if backup_database:
+                    repl = Replication(self._model, source_name, target_name, drop_first=True, create=True)
+                    self.queue_replication(repl)
 
     def on_menu_databases_restore(self, menu):
         selected_databases = self._databases.selected
@@ -335,7 +337,7 @@ class MainWindow:
         selected_databases = self._databases.selected
         single_row = len(selected_databases) == 1
         multiple_rows = len(selected_databases) > 1
-        enable_backup = single_row and selected_databases[0].db_name.find('backup$') < 0
+        enable_backup = (single_row and selected_databases[0].db_name.find('backup$') < 0) or multiple_rows
         enable_restore = single_row and selected_databases[0].db_name.find('backup$') == 0
 
         self.menuitem_databases_new.set_sensitive(connected)
