@@ -271,10 +271,10 @@ class MainWindow:
 
     def on_menuitem_databases_compact(self, menu):
         selected_databases = self._databases.selected
-        if len(selected_databases) == 1:
+        if len(selected_databases) > 0:
             def func():
-                name = selected_databases[0].db_name
-                self._model.compact_database(name)
+                for selected_database in selected_databases:
+                    self._model.compact_database(selected_database.db_name)
             self.couchdb_request(func)
 
     def on_menu_databases_browse_futon(self, menu):
@@ -350,7 +350,7 @@ class MainWindow:
         self.menuitem_databases_browse_fauxton.set_sensitive(single_row or multiple_rows)
         self.menuitem_databases_browse_alldocs.set_sensitive(single_row or multiple_rows)
         self.menuitem_databases_delete.set_sensitive(single_row or multiple_rows)
-        self.menuitem_databases_compact.set_sensitive(single_row)
+        self.menuitem_databases_compact.set_sensitive(not is_pouchdb and (single_row or multiple_rows))
         self.menuitem_databases_replication_new.set_sensitive(single_row or multiple_rows)
         self.menuitem_databases_replication_from_remote.set_sensitive(connected)
         self.menuitem_database_set_revisions_1.set_sensitive(single_row or multiple_rows)
