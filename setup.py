@@ -1,7 +1,8 @@
 from distutils.core import setup
+from codecs import open
 
 files = [
-    'LICENSE',
+    'LICENSE', 'README.rst',
     'ui/*.py', 'ui/*.glade', 'ui/*.png',
     'ui/dialogs/*.py', 'ui/view_models/*.py', 'ui/listview_models/*.py',
     'src/*.py'
@@ -9,14 +10,10 @@ files = [
 
 description = 'A GTK+ tool to create, delete and monitor CouchDB, AvanceDB, PouchDB and Cloudant replication jobs'
 
-long_description = \
-    'Replicate data between your CouchDB instances easily, for example:\n' \
-    '* replicate a single database to multiple targets, remote or local\n' \
-    '* replicate multiple databases to multiple targets\n' \
-    '* drag and drop a database to replicate it\n' \
-    '* drop the target database before replication\n' \
-    '* continuous replication\n' \
-    '* stored credentials and server details'
+with open('README.rst', 'r', 'utf-8') as f:
+    readme = f.read()
+
+long_description = readme + '\n'
 
 classifiers = [
     'Development Status :: 4 - Beta',
