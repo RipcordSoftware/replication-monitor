@@ -8,7 +8,7 @@ files = [
     'src/*.py'
 ]
 
-description = 'A GTK+ tool to create, delete and monitor CouchDB, AvanceDB, PouchDB and Cloudant replication jobs'
+description = 'AvanceDB Replication Monitor - a GTK+ tool for AvanceDB, CouchDB, PouchDB and Cloudant'
 
 with open('README.rst', 'r', 'utf-8') as f:
     readme = f.read()
