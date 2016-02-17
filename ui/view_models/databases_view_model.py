@@ -4,6 +4,7 @@ from src.gtk_helper import GtkHelper
 from src.listview_model import ListViewModel
 
 from ui.listview_models.databases_listview_model import DatabasesListViewModel
+from ui.multidragdrop_treeview import MultiDragDropTreeView
 
 
 class DatabasesViewModel:
@@ -13,6 +14,7 @@ class DatabasesViewModel:
 
     def __init__(self, listview, drag_and_drop=True):
         self._listview = listview
+        MultiDragDropTreeView().attach(self._listview)
         self._model = DatabasesListViewModel()
         self._sorted_model = ListViewModel.Sorted(self._model)
         self._listview.set_model(self._sorted_model)
