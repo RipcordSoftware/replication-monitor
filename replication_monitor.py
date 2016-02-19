@@ -2,6 +2,7 @@
 
 import os
 import sys
+from subprocess import Popen
 
 try:
     import gi
@@ -22,12 +23,12 @@ from src.builder import Builder
 from ui.main_window import MainWindow
 
 
-def main():
-    ui_path = os.path.dirname(os.path.realpath(__file__))
-    ui_path = os.path.join(ui_path, 'ui/replication_monitor.glade')
-    builder = Builder(ui_path)
-    win = MainWindow(builder)
+def main(file):
+    glade_path = os.path.dirname(os.path.realpath(file))
+    glade_path = os.path.join(glade_path, 'ui/replication_monitor.glade')
+    builder = Builder(glade_path)
+    win = MainWindow(builder, lambda: Popen([file, ' '.join(sys.argv[1::])]))
     Gtk.main()
 
 if __name__ == '__main__':
-    main()
+    main(__file__)

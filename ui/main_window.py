@@ -32,13 +32,11 @@ from ui.view_models.connection_bar_view_model import ConnectionBarViewModel
 
 
 class MainWindow:
-    _auto_update = False
-    _auto_update_thread = None
-    _auto_update_exit = threading.Event()
-
     _watch_cursor = Gdk.Cursor.new(Gdk.CursorType.WATCH)
 
-    def __init__(self, builder):
+    def __init__(self, builder, new_process):
+        self._new_process = new_process
+
         self._model = None
 
         self._win = builder.get_object('applicationwindow', target=self, include_children=True)
@@ -62,6 +60,8 @@ class MainWindow:
 
         self._replication_queue = NewReplicationQueue(self.report_error)
 
+        self._auto_update = False
+        self._auto_update_exit = threading.Event()
         self._auto_update_thread = threading.Thread(target=self.auto_update_handler)
         self._auto_update_thread.daemon = True
         self._auto_update_thread.start()
@@ -164,7 +164,7 @@ class MainWindow:
     # endregion
 
     # region Event handlers
-    def on_button_connect(self, button):
+    def on_button_connect(self, *_):
         self._model = None
         self._infobar_warnings.show(False)
         self._replication_tasks.clear()
@@ -186,25 +186,29 @@ class MainWindow:
         except Exception as e:
             self.report_error(e)
 
-    def on_infobar_warnings_response(self, widget, user_data):
+    def on_infobar_warnings_response(self, *_):
         self._infobar_warnings.show(False)
 
-    def on_menu_databases_refresh(self, menu):
+    def on_menu_databases_refresh(self, *_):
         self._databases.update(self._model.databases)
 
-    def on_comboboxtext_port_changed(self, widget):
+    def on_comboboxtext_port_changed(self, *_):
         self._connection_bar.on_comboboxtext_port_changed()
 
-    def on_database_button_press_event(self, menu, event):
+    def on_menuitem_file_new_window_activate(self, *_):
+        if callable(self._new_process):
+            self._new_process()
+
+    def on_database_button_press_event(self, _, event):
         if event.type == Gdk.EventType.BUTTON_PRESS and event.button == 3:
             self._database_menu.popup(None, None, None, None, event.button, event.time)
             return True
 
-    def on_databases_popup_menu(self, widget):
+    def on_databases_popup_menu(self, *_):
         self._database_menu.popup(None, None, None, None, 0, 0)
         return True
 
-    def on_menu_databases_new(self, widget):
+    def on_menu_databases_new(self, *_):
         if self.new_database_dialog.run() == Gtk.ResponseType.OK:
             name = self.new_database_dialog.name
 
@@ -214,7 +218,7 @@ class MainWindow:
                 self._databases.append(db)
             self.couchdb_request(request)
 
-    def on_menu_databases_delete(self, menu):
+    def on_menu_databases_delete(self, *_):
         selected_databases = [item for item in self._databases.selected if item.db_name[0] != '_']
         if len(selected_databases) > 0:
             result = self.delete_databases_dialog.run(selected_databases)
@@ -225,7 +229,7 @@ class MainWindow:
                         self._databases.remove(db.db_name)
                 self.couchdb_request(request)
 
-    def on_menu_databases_backup(self, menu):
+    def on_menu_databases_backup(self, *_):
         for selected_database in self._databases.selected:
             if selected_database.db_name.find('backup$') < 0:
                 backup_database = True
@@ -248,7 +252,7 @@ class MainWindow:
                     repl = Replication(self._model, source_name, target_name, drop_first=True, create=True)
                     self.queue_replication(repl)
 
-    def on_menu_databases_restore(self, menu):
+    def on_menu_databases_restore(self, *_):
         selected_databases = self._databases.selected
         if len(selected_databases) == 1 and selected_databases[0].db_name.find('backup$') == 0:
             restore_database = True
@@ -269,7 +273,7 @@ class MainWindow:
                 repl = Replication(self._model, source_name, target_name, drop_first=True, create=True)
                 self.queue_replication(repl)
 
-    def on_menuitem_databases_compact(self, menu):
+    def on_menuitem_databases_compact(self, *_):
         selected_databases = self._databases.selected
         if len(selected_databases) > 0:
             def func():
@@ -277,14 +281,14 @@ class MainWindow:
                     self._model.compact_database(selected_database.db_name)
             self.couchdb_request(func)
 
-    def on_menu_databases_browse_futon(self, menu):
+    def on_menu_databases_browse_futon(self, *_):
         for selected_database in self._databases.selected:
             url = '{0}://{1}:{2}/_utils/database.html?{3}'.format(
                 'https' if self.secure else 'http',
                 self.server, self.port, selected_database.db_name)
             webbrowser.open_new_tab(url)
 
-    def on_menu_databases_browse_fauxton(self, menu):
+    def on_menu_databases_browse_fauxton(self, *_):
         url_format = '{0}://{1}:{2}/'.format('https' if self.secure else 'http', self.server, self.port)
         url_format += '_utils/fauxton/index.html#/database/{0}/_all_docs?limit=20' \
             if self._model.couchdb.db_type is not CouchDB.DatabaseType.PouchDB else \
@@ -293,7 +297,7 @@ class MainWindow:
             url = url_format.format(selected_database.db_name)
             webbrowser.open_new_tab(url)
 
-    def on_menu_databases_browse_alldocs(self, menu):
+    def on_menu_databases_browse_alldocs(self, *_):
         for selected_database in self._databases.selected:
             url = '{0}://{1}:{2}/{3}/_all_docs?limit=100'.format(
                 'https' if self.secure else 'http',
@@ -321,7 +325,7 @@ class MainWindow:
             for repl in replications:
                 self.queue_replication(repl)
 
-    def on_menuitem_databases_replication_remote(self, menu):
+    def on_menuitem_databases_replication_remote(self, *_):
         replications = None
         result = self.remote_replication_dialog.run(self._model)
         if result == Gtk.ResponseType.OK:
@@ -332,7 +336,7 @@ class MainWindow:
             for repl in replications:
                 self.queue_replication(repl)
 
-    def on_menu_databases_show(self, menu):
+    def on_menu_databases_show(self, *_):
         connected = self._model is not None
         db_type = self._model.couchdb.db_type if connected else CouchDB.DatabaseType.Unknown
         is_pouchdb = db_type == CouchDB.DatabaseType.PouchDB
@@ -362,13 +366,13 @@ class MainWindow:
     def on_menu_databases_realize(self, menu):
         self.on_menu_databases_show(menu)
 
-    def on_auto_update(self, button):
+    def on_auto_update(self, *_):
         self._auto_update = self.checkbuttonAutoUpdate.get_active()
 
-    def on_delete(self, widget, data):
+    def on_delete(self, *_):
         self.close()
 
-    def on_checkmenuitem_view_new_replication_window_toggled(self, menu):
+    def on_checkmenuitem_view_new_replication_window_toggled(self, *_):
         active = self.checkmenuitem_view_new_replication_window.get_active()
         if active:
             self._new_replications_window.show()
@@ -378,7 +382,7 @@ class MainWindow:
     def on_hide_new_replication_window(self):
         self.checkmenuitem_view_new_replication_window.set_active(False)
 
-    def on_imagemenuitem_file_quit(self, menu):
+    def on_imagemenuitem_file_quit(self, *_):
         self.close()
 
     def on_treeview_databases_drag_data_received(self, widget, drag_context, x, y, data, info, time):
@@ -410,18 +414,18 @@ class MainWindow:
                 text += url + db.db_name
             data.set_text(text, -1)
 
-    def on_menuitem_help_about_activate(self, menu):
+    def on_menuitem_help_about_activate(self, *_):
         self.about_dialog.run()
 
-    def on_menuitem_database_set_revisions_1_activate(self, menu):
+    def on_menuitem_database_set_revisions_1_activate(self, *_):
         self.set_selected_databases_limit(1)
 
-    def on_menuitem_database_set_revisions_10_activate(self, menu):
+    def on_menuitem_database_set_revisions_10_activate(self, *_):
         self.set_selected_databases_limit(10)
 
-    def on_menuitem_database_set_revisions_100_activate(self, menu):
+    def on_menuitem_database_set_revisions_100_activate(self, *_):
         self.set_selected_databases_limit(100)
 
-    def on_menuitem_database_set_revisions_1000_activate(self, menu):
+    def on_menuitem_database_set_revisions_1000_activate(self, *_):
         self.set_selected_databases_limit(1000)
     # endregion
