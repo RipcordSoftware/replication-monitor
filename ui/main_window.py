@@ -345,8 +345,8 @@ class MainWindow:
 
         self.menuitem_databases_new.set_sensitive(connected)
         self.menuitem_databases_refresh.set_sensitive(connected)
-        self.menuitem_databases_backup.set_sensitive(enable_backup)
-        self.menuitem_databases_restore.set_sensitive(enable_restore)
+        self.menuitem_databases_backup.set_sensitive(not is_pouchdb and enable_backup)
+        self.menuitem_databases_restore.set_sensitive(not is_pouchdb and enable_restore)
         self.menuitem_databases_browse_futon.set_sensitive(not is_pouchdb and (single_row or multiple_rows))
         self.menuitem_databases_browse_fauxton.set_sensitive(single_row or multiple_rows)
         self.menuitem_databases_browse_alldocs.set_sensitive(single_row or multiple_rows)
