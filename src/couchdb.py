@@ -1,10 +1,13 @@
 import json
 import requests
+import re
 from collections import namedtuple
 from base64 import b64encode
 from urllib.parse import quote_plus
 from enum import Enum
 from contextlib import closing
+from time import time
+from math import floor
 
 
 class CouchDBException(Exception):
@@ -224,7 +227,14 @@ class CouchDB:
         return response.body
 
     def create_replication(self, source, target, create_target=False, continuous=False):
-        job = {'source': source, 'target': target, 'create_target': create_target, 'continuous': continuous}
+        # create a sane-ish replication document id
+        now = floor(time())
+        repl_id = '{0}_{1}_{2}'.format(now, source, target)
+        repl_id = re.sub('[^a-zA-Z0-9]', '_', repl_id)
+        repl_id = repl_id.replace('__', '_').replace('__', '_').replace('__', '_').replace('__', '_')
+
+        job = {'_id': repl_id, 'source': source, 'target': target, 'create_target': create_target,
+               'continuous': continuous}
 
         if create_target:
             session = self.get_session()
