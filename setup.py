@@ -34,7 +34,7 @@ classifiers = [
 ]
 
 setup(name='replication-monitor',
-      version='0.1.4',
+      version='0.1.5',
       author='Craig Minihan, Ripcord Software',
       author_email='craig@ripcordsoftware.com',
       url='https://github.com/RipcordSoftware/avancedb-replication-monitor',
