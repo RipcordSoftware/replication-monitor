@@ -8,7 +8,7 @@ files = [
     'src/*.py'
 ]
 
-description = 'AvanceDB Replication Monitor - a GTK+ tool for AvanceDB, CouchDB, PouchDB and Cloudant'
+description = 'Replication Monitor - a GTK+ tool for AvanceDB, CouchDB, PouchDB and Cloudant'
 
 with open('README.rst', 'r', 'utf-8') as f:
     readme = f.read()
@@ -37,7 +37,7 @@ setup(name='replication-monitor',
       version='0.1.5',
       author='Craig Minihan, Ripcord Software',
       author_email='craig@ripcordsoftware.com',
-      url='https://github.com/RipcordSoftware/avancedb-replication-monitor',
+      url='https://github.com/RipcordSoftware/replication-monitor',
       description=description,
       long_description=long_description,
       classifiers=classifiers,

@@ -6,7 +6,7 @@ from collections import namedtuple
 class Keyring:
     Credentials = namedtuple('Credentials', 'username password')
 
-    _service = 'avancedb-replication-monitor'
+    _service = 'replication-monitor'
     _server_history = '-server-history'
 
     def __init__(self):

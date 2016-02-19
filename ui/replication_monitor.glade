@@ -41,8 +41,8 @@ Author: Craig Minihan
     <property name="width_request">800</property>
     <property name="height_request">600</property>
     <property name="can_focus">False</property>
-    <property name="title" translatable="yes">AvanceDB Replication Monitor</property>
-    <property name="icon">avancedb-replication-monitor-small.png</property>
+    <property name="title" translatable="yes">Replication Monitor</property>
+    <property name="icon">replication-monitor-small.png</property>
     <signal name="delete-event" handler="on_delete" swapped="no"/>
     <child>
       <object class="GtkBox" id="box1">
@@ -719,13 +719,13 @@ Author: Craig Minihan
     <property name="title" translatable="yes">About</property>
     <property name="type_hint">dialog</property>
     <property name="transient_for">applicationwindow</property>
-    <property name="program_name">AvanceDB Replication Monitor</property>
+    <property name="program_name">Replication Monitor</property>
     <property name="version">0.1.5</property>
     <property name="copyright" translatable="yes">(C) Ripcord Software 2016</property>
     <property name="comments" translatable="yes">Manage replications for CouchDB, AvanceDB, PouchDB and Cloudant</property>
-    <property name="website">https://github.com/RipcordSoftware/avancedb-replication-monitor</property>
-    <property name="website_label" translatable="yes">github.com/RipcordSoftware/avancedb-replication-monitor</property>
-    <property name="logo">avancedb-replication-monitor.png</property>
+    <property name="website">https://github.com/RipcordSoftware/replication-monitor</property>
+    <property name="website_label" translatable="yes">github.com/RipcordSoftware/replication-monitor</property>
+    <property name="logo">replication-monitor.png</property>
     <property name="license_type">mit-x11</property>
     <child internal-child="vbox">
       <object class="GtkBox" id="aboutdialog-vbox1">
