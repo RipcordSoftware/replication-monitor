@@ -2,7 +2,6 @@
 
 import os
 import sys
-from subprocess import Popen
 
 try:
     import gi
@@ -27,7 +26,7 @@ def main():
     glade_path = os.path.dirname(os.path.realpath(__file__))
     glade_path = os.path.join(glade_path, 'ui/replication_monitor.glade')
     builder = Builder(glade_path)
-    win = MainWindow(builder, lambda: Popen([__file__, ' '.join(sys.argv[1::])]))
+    win = MainWindow(builder)
     Gtk.main()
 
 if __name__ == '__main__':

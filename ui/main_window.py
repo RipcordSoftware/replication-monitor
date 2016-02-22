@@ -1,7 +1,9 @@
+import sys
 import threading
 import webbrowser
 import re
 from urllib.parse import urlparse
+from subprocess import Popen
 
 from gi.repository import Gtk, Gdk
 
@@ -34,9 +36,7 @@ from ui.view_models.connection_bar_view_model import ConnectionBarViewModel
 class MainWindow:
     _watch_cursor = Gdk.Cursor.new(Gdk.CursorType.WATCH)
 
-    def __init__(self, builder, new_process):
-        self._new_process = new_process
-
+    def __init__(self, builder):
         self._model = None
 
         self._win = builder.get_object('applicationwindow', target=self, include_children=True)
@@ -196,8 +196,10 @@ class MainWindow:
         self._connection_bar.on_comboboxtext_port_changed()
 
     def on_menuitem_file_new_window_activate(self, *_):
-        if callable(self._new_process):
-            self._new_process()
+        try:
+            Popen([sys.executable, ' '.join(sys.argv)])
+        except Exception as e:
+            self.report_error(e)
 
     def on_database_button_press_event(self, _, event):
         if event.type == Gdk.EventType.BUTTON_PRESS and event.button == 3:

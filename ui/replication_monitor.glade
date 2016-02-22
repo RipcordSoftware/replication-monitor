@@ -720,7 +720,7 @@ Author: Craig Minihan
     <property name="type_hint">dialog</property>
     <property name="transient_for">applicationwindow</property>
     <property name="program_name">Replication Monitor</property>
-    <property name="version">0.1.6</property>
+    <property name="version">0.1.7</property>
     <property name="copyright" translatable="yes">(C) Ripcord Software 2016</property>
     <property name="comments" translatable="yes">Manage replications for CouchDB, AvanceDB, PouchDB and Cloudant</property>
     <property name="website">https://github.com/RipcordSoftware/replication-monitor</property>
