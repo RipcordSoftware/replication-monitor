@@ -23,12 +23,12 @@ from src.builder import Builder
 from ui.main_window import MainWindow
 
 
-def main(file):
-    glade_path = os.path.dirname(os.path.realpath(file))
+def main():
+    glade_path = os.path.dirname(os.path.realpath(__file__))
     glade_path = os.path.join(glade_path, 'ui/replication_monitor.glade')
     builder = Builder(glade_path)
-    win = MainWindow(builder, lambda: Popen([file, ' '.join(sys.argv[1::])]))
+    win = MainWindow(builder, lambda: Popen([__file__, ' '.join(sys.argv[1::])]))
     Gtk.main()
 
 if __name__ == '__main__':
-    main(__file__)
+    main()
