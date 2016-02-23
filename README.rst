@@ -1,7 +1,11 @@
-|replmon| Replication Monitor
+|replmon-logo| Replication Monitor
 =============================
 A GTK+ desktop app which can create, monitor and delete AvanceDB, CouchDB, PouchDB or IBM Cloudant replication jobs.
 Runs on Linux/Gnome but can be persuaded to run on `Windows <https://github.com/RipcordSoftware/replication-monitor/wiki/Platform:-Windows>`_ or `OSX <https://github.com/RipcordSoftware/replication-monitor/wiki/Platform:-OSX>`_.
+
+Screenshot:
+----------
+|replmon-mainwindow|
 
 Features:
 ---------
@@ -38,4 +42,5 @@ Alternately pull the latest code from our ``github`` repository:
 
 If you clone from ``git`` make sure you satisfy the ``requirements.txt`` file.
 
-.. |replmon| image:: https://raw.githubusercontent.com/RipcordSoftware/replication-monitor/master/ui/replication-monitor-small.png
+.. |replmon-logo| image:: https://raw.githubusercontent.com/RipcordSoftware/replication-monitor/master/ui/replication-monitor-small.png
+.. |replmon-mainwindow| image:: http://cdn.ripcordsoftware.com/images/replication-monitor/replication-monitor-debian8.png
