@@ -142,7 +142,7 @@ class MainWindow:
                                     lambda err: self._new_replications_window.update_failed(ref, err))
 
     def set_selected_databases_limit(self, limit):
-        selected_databases = [item for item in self._databases.selected if item.db_name[0] != '_']
+        selected_databases = self._databases.selected.public
         if len(selected_databases) > 0:
             def func():
                 for row in selected_databases:
@@ -221,7 +221,7 @@ class MainWindow:
             self.couchdb_request(request)
 
     def on_menu_databases_delete(self, *_):
-        selected_databases = [item for item in self._databases.selected if item.db_name[0] != '_']
+        selected_databases = self._databases.selected.public
         if len(selected_databases) > 0:
             result = self.delete_databases_dialog.run(selected_databases)
             if result == Gtk.ResponseType.OK:
@@ -232,7 +232,7 @@ class MainWindow:
                 self.couchdb_request(request)
 
     def on_menu_databases_backup(self, *_):
-        for selected_database in self._databases.selected:
+        for selected_database in self._databases.selected.all:
             if selected_database.db_name.find('backup$') < 0:
                 backup_database = True
                 source_name = selected_database.db_name
@@ -255,7 +255,7 @@ class MainWindow:
                     self.queue_replication(repl)
 
     def on_menu_databases_restore(self, *_):
-        selected_databases = self._databases.selected
+        selected_databases = self._databases.selected.all
         if len(selected_databases) == 1 and selected_databases[0].db_name.find('backup$') == 0:
             restore_database = True
             source_name = selected_databases[0].db_name
@@ -276,7 +276,7 @@ class MainWindow:
                 self.queue_replication(repl)
 
     def on_menuitem_databases_compact(self, *_):
-        selected_databases = self._databases.selected
+        selected_databases = self._databases.selected.all
         if len(selected_databases) > 0:
             def func():
                 for selected_database in selected_databases:
@@ -284,7 +284,7 @@ class MainWindow:
             self.couchdb_request(func)
 
     def on_menu_databases_browse_futon(self, *_):
-        for selected_database in self._databases.selected:
+        for selected_database in self._databases.selected.all:
             url = '{0}://{1}:{2}/_utils/database.html?{3}'.format(
                 'https' if self.secure else 'http',
                 self.server, self.port, selected_database.db_name)
@@ -295,12 +295,12 @@ class MainWindow:
         url_format += '_utils/fauxton/index.html#/database/{0}/_all_docs?limit=20' \
             if self._model.couchdb.db_type is not CouchDB.DatabaseType.PouchDB else \
             '_utils/#/database/{0}/_all_docs'
-        for selected_database in self._databases.selected:
+        for selected_database in self._databases.selected.all:
             url = url_format.format(selected_database.db_name)
             webbrowser.open_new_tab(url)
 
     def on_menu_databases_browse_alldocs(self, *_):
-        for selected_database in self._databases.selected:
+        for selected_database in self._databases.selected.all:
             url = '{0}://{1}:{2}/{3}/_all_docs?limit=100'.format(
                 'https' if self.secure else 'http',
                 self.server, self.port, selected_database.db_name)
@@ -308,7 +308,7 @@ class MainWindow:
 
     def on_menuitem_databases_replication_new(self, menu):
         replications = None
-        selected_databases = self._databases.selected
+        selected_databases = self._databases.selected.all
         selected_count = len(selected_databases)
 
         if selected_count == 1:
@@ -343,7 +343,7 @@ class MainWindow:
         db_type = self._model.couchdb.db_type if connected else CouchDB.DatabaseType.Unknown
         is_pouchdb = db_type == CouchDB.DatabaseType.PouchDB
         is_cloudant = db_type == CouchDB.DatabaseType.Cloudant
-        selected_databases = self._databases.selected
+        selected_databases = self._databases.selected.all
         single_row = len(selected_databases) == 1
         multiple_rows = len(selected_databases) > 1
         enable_backup = (single_row and selected_databases[0].db_name.find('backup$') < 0) or multiple_rows
@@ -405,7 +405,7 @@ class MainWindow:
                 self.checkmenuitem_view_new_replication_window.set_active(True)
 
     def on_treeview_databases_drag_data_get(self, widget, drag_context, data, info, time):
-        selected_databases = self._databases.selected
+        selected_databases = self._databases.selected.public
         selected_count = len(selected_databases)
         if selected_count > 0:
             text = ''

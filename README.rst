@@ -19,6 +19,7 @@ Requirements:
 - GTK+ (pygobject)
 - Keyring
 - Requests
+- Bunch
 
 Installation
 ------------

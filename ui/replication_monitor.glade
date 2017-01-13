@@ -3,7 +3,7 @@
 
 The MIT License (MIT)
 
-Copyright (c) Ripcord Software 2016
+Copyright (c) Ripcord Software 2016-2017
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -30,7 +30,7 @@ Author: Craig Minihan
   <requires lib="gtk+" version="3.8"/>
   <!-- interface-license-type mit -->
   <!-- interface-name AvanceDB Replication Monitor -->
-  <!-- interface-copyright Ripcord Software 2016 -->
+  <!-- interface-copyright Ripcord Software 2016-2017 -->
   <!-- interface-authors Craig Minihan -->
   <object class="GtkImage" id="image2">
     <property name="visible">True</property>
@@ -720,8 +720,8 @@ Author: Craig Minihan
     <property name="type_hint">dialog</property>
     <property name="transient_for">applicationwindow</property>
     <property name="program_name">Replication Monitor</property>
-    <property name="version">0.1.7</property>
-    <property name="copyright" translatable="yes">(C) Ripcord Software 2016</property>
+    <property name="version">0.1.8</property>
+    <property name="copyright" translatable="yes">(C) Ripcord Software 2016-2017</property>
     <property name="comments" translatable="yes">Manage replications for CouchDB, AvanceDB, PouchDB and Cloudant</property>
     <property name="website">https://github.com/RipcordSoftware/replication-monitor</property>
     <property name="website_label" translatable="yes">github.com/RipcordSoftware/replication-monitor</property>

@@ -1,5 +1,7 @@
 from gi.repository import Gdk
 
+from bunch import Bunch
+
 from src.gtk_helper import GtkHelper
 from src.listview_model import ListViewModel
 
@@ -27,12 +29,14 @@ class DatabasesViewModel:
     @property
     @GtkHelper.invoke_func_sync
     def selected(self):
-        selected = []
+        selected = Bunch()
+        selected.all = []
         (_, path_list) = self._listview.get_selection().get_selected_rows()
         if path_list and len(path_list):
             for path in path_list:
                 db = self._model[path]
-                selected.append(db)
+                selected.all.append(db)
+        selected.public = [item for item in selected.all if item.db_name[0] != '_']
         return selected
 
     @GtkHelper.invoke_func

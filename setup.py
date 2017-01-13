@@ -34,7 +34,7 @@ classifiers = [
 ]
 
 setup(name='replication-monitor',
-      version='0.1.7',
+      version='0.1.8',
       author='Craig Minihan, Ripcord Software',
       author_email='craig@ripcordsoftware.com',
       url='https://github.com/RipcordSoftware/replication-monitor',
@@ -47,5 +47,5 @@ setup(name='replication-monitor',
       package_dir={'replication_monitor': '.'},
       package_data={'replication_monitor': files},
       scripts=['scripts/replication-monitor', 'scripts/replication-monitor.bat'],
-      install_requires=['keyring >= 0.8.3', 'keyrings.alt >= 1.1', 'requests >= 2.4']
+      install_requires=['keyring >= 0.8.3', 'keyrings.alt >= 1.1', 'requests >= 2.4', 'bunch >= 1.0.1']
       )
