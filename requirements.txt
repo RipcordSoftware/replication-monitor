@@ -1,4 +1,4 @@
 requests
 keyring
-keyrings-alt
+keyrings.alt
 bunch
