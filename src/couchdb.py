@@ -75,6 +75,40 @@ class CouchDB:
         PouchDB = 3
         Cloudant = 4
 
+    class DatabaseVersion:
+        def __init__(self, version):
+            self._version = None
+            self._major = -1
+            self._minor = -1
+            self._build = -1
+            if version and type(version) is str:
+                m = re.search('^([0-9]+)\.([0-9]+)\.([0-9]+)$', version)
+                if m:
+                    self._version = version
+                    self._major = m.group(1)
+                    self._minor = m.group(2)
+                    self._build = m.group(3)
+
+        @property
+        def valid(self):
+            return self._version is not None
+
+        @property
+        def version(self):
+            return self._version
+
+        @property
+        def major(self):
+            return int(self._major)
+
+        @property
+        def minor(self):
+            return int(self._minor)
+
+        @property
+        def build(self):
+            return int(self._build)
+
     class Response:
         def __init__(self, response, body=None, content_type=None):
             self._response = response
@@ -139,12 +173,33 @@ class CouchDB:
         return db_type
 
     @property
+    def db_version(self):
+        signature = self.get_signature()
+        version = getattr(signature, 'version', None)
+        if version:
+            return CouchDB.DatabaseVersion(version)
+        else:
+            return None
+
+    @property
     def auth(self):
         return self._auth
 
     @property
     def get_credentials_callback(self):
         return self._get_credentials
+
+    @property
+    def secure(self):
+        return self._secure
+
+    @property
+    def host(self):
+        return self._host
+
+    @property
+    def port(self):
+        return self._port
 
     def get_url(self):
         url = 'https' if self._secure else 'http'

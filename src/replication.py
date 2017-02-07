@@ -68,17 +68,17 @@ class Replication:
         source_name = self._source
         target_name = self._target
 
-        if couchdb.db_type is CouchDB.DatabaseType.Cloudant and couchdb.auth:
+        # asking for the replicator database will force the user to give the right auth credentials
+        couchdb.get_docs('_replicator', limit=0)
+
+        if couchdb.auth and (couchdb.db_type is CouchDB.DatabaseType.Cloudant or couchdb.db_version.major >= 2):
             url = couchdb.get_url()
-            url = url.replace('://', '://' + couchdb.auth.url_auth + '@')
+            url = self._get_auth_url(url, couchdb.auth.url_auth)
             source = url + source_name
             target = url + target_name
         else:
             source = source_name
             target = target_name
-
-        # asking for the replicator database will force the user to give the right auth credentials
-        couchdb.get_docs('_replicator', limit=0)
 
         if self._drop_first:
             try:
@@ -111,11 +111,18 @@ class Replication:
         source_couchdb.get_docs('_replicator', limit=0)
         target_couchdb.get_docs('_replicator', limit=0)
 
-        if source_is_remote and source_couchdb.auth:
-            source = source.replace('://', '://' + source_couchdb.auth.url_auth + '@')
+        source_version = source_couchdb.db_version
+        target_version = target_couchdb.db_version
 
-        if target_is_remote and target_couchdb.auth:
-            target = target.replace('://', '://' + target_couchdb.auth.url_auth + '@')
+        if (source_is_remote or source_version.major >= 2) and source_couchdb.auth:
+            if not source_is_remote:
+                source = source_couchdb.get_url() + source
+            source = self._get_auth_url(source, source_couchdb.auth.url_auth)
+
+        if (target_is_remote or target_version.major >= 2) and target_couchdb.auth:
+            if not target_is_remote:
+                target = target_couchdb.get_url() + target
+            target = self._get_auth_url(target, target_couchdb.auth.url_auth)
 
         if self._drop_first:
             try:
@@ -142,3 +149,7 @@ class Replication:
     def _get_database_from_url(url):
         u = urlparse(url)
         return u.path[1::]
+
+    @staticmethod
+    def _get_auth_url(url, auth):
+        return url.replace('://', '://' + auth + '@')
