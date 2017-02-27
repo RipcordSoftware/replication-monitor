@@ -3,7 +3,7 @@ import requests
 import re
 from collections import namedtuple
 from base64 import b64encode
-from urllib.parse import quote_plus
+from urllib.parse import quote, quote_plus
 from enum import Enum
 from contextlib import closing
 from time import time
@@ -223,18 +223,18 @@ class CouchDB:
         return response.body
 
     def create_database(self, name):
-        response = self._make_request('/' + name, 'PUT')
+        response = self._make_request('/', 'PUT', db_name=name)
         if response.status != 201 or not response.is_json:
             raise CouchDBException(response)
 
     def get_database(self, name):
-        response = self._make_request('/' + name)
+        response = self._make_request('/', db_name=name)
         if response.status != 200 or not response.is_json:
             raise CouchDBException(response)
         return response.body
 
     def delete_database(self, name):
-        response = self._make_request('/' + name, 'DELETE')
+        response = self._make_request('/', 'DELETE', db_name=name)
         if response.status != 200 or not response.is_json:
             raise CouchDBException(response)
 
@@ -246,8 +246,7 @@ class CouchDB:
 
     def get_docs(self, name, limit=10):
         query_string = 'include_docs=true' + ('&limit=' + str(limit) if limit is not None else '')
-        url = '/' + name + '/_all_docs?' + query_string
-        response = self._make_request(url)
+        response = self._make_request('/_all_docs?' + query_string, db_name=name)
         if response.status != 200 or not response.is_json:
             raise CouchDBException(response)
         docs = [row.doc for row in response.body.rows]
@@ -265,7 +264,7 @@ class CouchDB:
         return tasks
 
     def get_revs_limit(self, name):
-        response = self._make_request('/' + name + '/_revs_limit', 'GET')
+        response = self._make_request('/_revs_limit', 'GET', db_name=name)
         if response.status != 200:
             raise CouchDBException(response)
         try:
@@ -275,8 +274,7 @@ class CouchDB:
         return response
 
     def set_revs_limit(self, name, limit):
-        url = '/' + name + '/_revs_limit'
-        response = self._make_request(url, 'PUT', body=str(limit), content_type='application/json')
+        response = self._make_request('/_revs_limit', 'PUT', body=str(limit), content_type='application/json', db_name=name)
         if response.status != 200 or not response.is_json:
             raise CouchDBException(response)
         return response.body
@@ -303,11 +301,11 @@ class CouchDB:
         return response.body
 
     def compact_database(self, name):
-        response = self._make_request('/' + name + '/_compact', 'POST', None, 'application/json')
+        response = self._make_request('/_compact', 'POST', None, 'application/json', db_name=name)
         if response.status != 202 or not response.is_json:
             raise CouchDBException(response)
 
-    def _make_request(self, uri, method='GET', body=None, content_type=None):
+    def _make_request(self, uri, method='GET', body=None, content_type=None, db_name=None):
         auth = None
         if self._auth:
             auth = (self._auth.username, self._auth.password)
@@ -317,6 +315,9 @@ class CouchDB:
             headers['Content-Type'] = content_type
 
         request = getattr(CouchDB._session, method.lower())
+
+        if db_name:
+            uri = '/' + CouchDB.encode_db_name(db_name) + uri
 
         server_url = self.get_url()
         with closing(request(server_url + uri[1::], headers=headers, data=body, auth=auth)) as response:
@@ -364,3 +365,7 @@ class CouchDB:
         for key in keys:
             new_keys.append(key.replace('-', '_'))
         return new_keys
+
+    @staticmethod
+    def encode_db_name(name):
+        return quote(name, '')

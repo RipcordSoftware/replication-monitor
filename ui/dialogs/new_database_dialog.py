@@ -26,7 +26,7 @@ class NewDatabaseDialog:
 
     def on_entry_new_database_name_changed(self, text):
         name = self.entry_new_database_name.get_text()
-        m = re.match('^[a-z][a-z0-9_$()+-]*?$', name)
+        m = re.match('^[a-z][a-z0-9_$()+-/]*?$', name)
         sensitive = m is not None
         self.button_new_database_dialog_ok.set_sensitive(sensitive)
 

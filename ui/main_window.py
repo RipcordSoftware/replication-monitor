@@ -285,9 +285,10 @@ class MainWindow:
 
     def on_menu_databases_browse_futon(self, *_):
         for selected_database in self._databases.selected.all:
+            db_name = CouchDB.encode_db_name(selected_database.db_name)
             url = '{0}://{1}:{2}/_utils/database.html?{3}'.format(
                 'https' if self.secure else 'http',
-                self.server, self.port, selected_database.db_name)
+                self.server, self.port, db_name)
             webbrowser.open_new_tab(url)
 
     def on_menu_databases_browse_fauxton(self, *_):
@@ -296,14 +297,16 @@ class MainWindow:
             if self._model.couchdb.db_type is not CouchDB.DatabaseType.PouchDB else \
             '_utils/#/database/{0}/_all_docs'
         for selected_database in self._databases.selected.all:
-            url = url_format.format(selected_database.db_name)
+            db_name = CouchDB.encode_db_name(selected_database.db_name)
+            url = url_format.format(db_name)
             webbrowser.open_new_tab(url)
 
     def on_menu_databases_browse_alldocs(self, *_):
         for selected_database in self._databases.selected.all:
+            db_name = CouchDB.encode_db_name(selected_database.db_name)
             url = '{0}://{1}:{2}/{3}/_all_docs?limit=100'.format(
                 'https' if self.secure else 'http',
-                self.server, self.port, selected_database.db_name)
+                self.server, self.port, db_name)
             webbrowser.open_new_tab(url)
 
     def on_menuitem_databases_replication_new(self, menu):
