@@ -34,7 +34,7 @@ classifiers = [
 ]
 
 setup(name='replication-monitor',
-      version='0.1.8',
+      version='0.1.9',
       author='Craig Minihan, Ripcord Software',
       author_email='craig@ripcordsoftware.com',
       url='https://github.com/RipcordSoftware/replication-monitor',
